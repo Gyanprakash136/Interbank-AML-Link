@@ -116,6 +116,16 @@ class LocalRuleDetectionEngine:
             )
             score_components += 0.30
 
+        # Currency Coverage Data-Completeness Warning
+        if not feat.currency_coverage_complete:
+            triggered_rules.append("RULE_INCOMPLETE_CURRENCY_COVERAGE")
+            rule_explanations.append(
+                f"AUDIT WARNING: Financial totals reflect partial activity. {feat.coverage_warning}"
+            )
+            # Note: Missing currency mappings are treated strictly as a data-completeness warning,
+            # not an illicit behavior risk indicator. No artificial risk score adjustment is applied,
+            # ensuring AML risk scores reflect genuine observed transactional typologies.
+
         # Add KYC local risk component (scaled at 20%)
         score_components += feat.kyc_risk_score * 0.20
 
@@ -133,6 +143,10 @@ class LocalRuleDetectionEngine:
             "out_degree": feat.out_degree,
             "rapid_pass_through_hours": feat.rapid_pass_through_hours,
             "kyc_risk_score": feat.kyc_risk_score,
+            "currency_coverage_complete": feat.currency_coverage_complete,
+            "excluded_currencies": feat.excluded_currencies,
+            "excluded_currency_tx_count": feat.excluded_currency_tx_count,
+            "coverage_warning": feat.coverage_warning,
         }
 
         return LocalDetectionAlert(

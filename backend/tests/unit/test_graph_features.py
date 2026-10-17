@@ -107,6 +107,10 @@ def test_feature_extractor_multi_currency_isolation():
     extractor_no_rates = LocalGraphFeatureExtractor(base_currency="USD")
     feat_no_rates = extractor_no_rates.extract_for_account(G, "LOCAL_MULTI")
     assert feat_no_rates.total_in_amount == 5000.0  # Only the USD amount is aggregated, NOT 10,000.0!
+    assert feat_no_rates.currency_coverage_complete is False
+    assert feat_no_rates.excluded_currencies == ["EUR"]
+    assert feat_no_rates.excluded_currency_tx_count == 1
+    assert "Incomplete currency coverage" in feat_no_rates.coverage_warning
 
     # 2. With explicit exchange rates: EUR is converted to USD before aggregation
     extractor_with_rates = LocalGraphFeatureExtractor(
@@ -116,6 +120,10 @@ def test_feature_extractor_multi_currency_isolation():
     feat_with_rates = extractor_with_rates.extract_for_account(G, "LOCAL_MULTI")
     # 5,000 USD + (5,000 * 1.10 USD) = 5,000 + 5,500 = 10,500 USD
     assert feat_with_rates.total_in_amount == 10500.0
+    assert feat_with_rates.currency_coverage_complete is True
+    assert feat_with_rates.excluded_currencies == []
+    assert feat_with_rates.excluded_currency_tx_count == 0
+    assert feat_with_rates.coverage_warning is None
 
     # 3. Missing rate for foreign currency raises CurrencyMismatchError
     from app.graph.features import CurrencyMismatchError
@@ -125,4 +133,3 @@ def test_feature_extractor_multi_currency_isolation():
     )
     with pytest.raises(CurrencyMismatchError, match="No exchange rate configured"):
         extractor_missing_rate.extract_for_account(G, "LOCAL_MULTI")
-

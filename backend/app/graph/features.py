@@ -26,7 +26,7 @@ LIMITATIONS:
 - Inter-bank movements outside the local bank are invisible at this stage.
 """
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import networkx as nx
@@ -67,6 +67,12 @@ class LocalAccountFeatures:
     fan_out_ratio: float
     two_hop_neighbor_count: int
     participates_in_local_cycle: bool
+
+    # Currency Coverage Indicators
+    currency_coverage_complete: bool = True
+    excluded_currencies: List[str] = field(default_factory=list)
+    excluded_currency_tx_count: int = 0
+    coverage_warning: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -131,6 +137,11 @@ class LocalGraphFeatureExtractor:
 
         # Multi-currency handling: amounts in different currencies must NEVER be added as if identical
         all_currencies = set(in_by_curr.keys()) | set(out_by_curr.keys())
+        currency_coverage_complete = True
+        excluded_currencies: List[str] = []
+        excluded_currency_tx_count = 0
+        coverage_warning: Optional[str] = None
+
         if self.exchange_rates is not None:
             # Convert all amounts to base_currency using explicit exchange rate mapping
             in_amounts = []
@@ -152,9 +163,22 @@ class LocalGraphFeatureExtractor:
             out_amounts = [amt for amls in out_by_curr.values() for amt in amls]
         else:
             # Multi-currency present without exchange rates:
-            # Strictly isolate to base_currency transactions, never adding differing currencies
+            # Strictly isolate to base_currency transactions, never adding differing currencies.
+            # Flag incomplete currency coverage to prevent treating partial totals as complete financial activity.
             in_amounts = in_by_curr.get(self.base_currency, [])
             out_amounts = out_by_curr.get(self.base_currency, [])
+            foreign_currencies = sorted(c for c in all_currencies if c != self.base_currency)
+            excluded_currencies = foreign_currencies
+            excluded_currency_tx_count = sum(
+                len(in_by_curr.get(c, [])) + len(out_by_curr.get(c, []))
+                for c in foreign_currencies
+            )
+            currency_coverage_complete = False
+            coverage_warning = (
+                f"Incomplete currency coverage: {excluded_currency_tx_count} transaction(s) in "
+                f"unmapped foreign currency/currencies {foreign_currencies} excluded from metrics. "
+                f"Financial totals reflect {self.base_currency} only and do not represent complete financial activity."
+            )
 
         total_in = sum(in_amounts)
         avg_in = (total_in / in_tx_count) if in_tx_count > 0 else 0.0
@@ -271,6 +295,10 @@ class LocalGraphFeatureExtractor:
             fan_out_ratio=round(fan_out_ratio, 2),
             two_hop_neighbor_count=two_hop_count,
             participates_in_local_cycle=participates_cycle,
+            currency_coverage_complete=currency_coverage_complete,
+            excluded_currencies=excluded_currencies,
+            excluded_currency_tx_count=excluded_currency_tx_count,
+            coverage_warning=coverage_warning,
         )
 
     def extract_all_local_accounts(self, G: nx.MultiDiGraph) -> Dict[str, LocalAccountFeatures]:

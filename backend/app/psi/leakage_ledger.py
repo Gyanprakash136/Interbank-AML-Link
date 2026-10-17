@@ -16,8 +16,14 @@ PRIVACY & SECURITY GUARANTEES:
 4. Cryptographic Hash Chain:
    Every session event incorporates a SHA-256 cryptographic hash over its canonical fields,
    linked directly to the preceding event's hash in an unbroken audit chain.
-5. Tamper & Anomaly Detection:
+5. Tamper & Checkpoint Verification:
    Includes verify_chain() to detect modified, deleted, inserted, or reordered records.
+   Supports external checkpoints (expected head hash / expected sequence count) to detect
+   silent tail truncation.
+6. Session Registry & Replay Protection:
+   Maintains a dedicated accepted_sessions registry enforcing UNIQUE(session_id) for accepted
+   sessions. Every audit event receives a distinct unique event_id while preserving the caller's
+   original submitted session_id unchanged in duplicate rejection audit records.
 
 AUDIT-INTEGRITY GUARANTEES & THREAT MODEL LIMITATIONS:
 The local cryptographic hash chain provides verifiable detection against accidental corruption,
@@ -65,6 +71,7 @@ class LeakageSessionEvent:
     sequence_number: int = 0
     prev_hash: str = "GENESIS"
     event_hash: str = ""
+    event_id: str = ""  # Unique audit record identifier
 
     @property
     def total_serialized_protocol_bytes(self) -> int:
@@ -96,8 +103,46 @@ class CollaborationRoundSummary:
         return asdict(self)
 
 
+def canonical_json_dumps(obj: Any) -> str:
+    """Serializes a Python data structure into SignalMesh Canonical JSON (SMCJ).
+
+    CANONICAL SPECIFICATION (SignalMesh Canonical JSON):
+    1. Lexicographical Key Ordering:
+       Dictionary keys are sorted in ascending order by Unicode code points (sort_keys=True).
+    2. Zero Structural Whitespace:
+       Separators are emitted strictly without whitespace: ',' between items and ':' between key/value.
+    3. Direct UTF-8 Representation:
+       Characters are emitted directly as UTF-8 without escaping non-ASCII code points (ensure_ascii=False).
+    4. Numeric Normalization:
+       - Negative zero (-0.0) is normalized to positive zero (0.0) to avoid dual zero representations.
+       - Floating-point numbers preserve full IEEE 754 precision without truncation.
+       - Integers are rendered as decimal tokens without decimal points.
+
+    HONEST SPECIFICATION BOUNDARY:
+    SMCJ is a well-defined project-specific canonicalization scheme. It does NOT claim full RFC 8785 (JCS)
+    compliance because Python's standard json engine formats certain exponents differently from ECMAScript 6
+    (e.g., Python outputs '1e-05' with a two-digit exponent rather than ECMAScript's '1e-5').
+    Within the SignalMesh network, all participating nodes share this exact SMCJ specification.
+    """
+    def _normalize(item: Any) -> Any:
+        if isinstance(item, dict):
+            return {str(k): _normalize(v) for k, v in item.items()}
+        if isinstance(item, (list, tuple)):
+            return [_normalize(x) for x in item]
+        if isinstance(item, float):
+            # Normalize negative zero (-0.0) to positive zero (0.0)
+            if item == 0.0:
+                return 0.0
+            return item
+        return item
+
+    normalized = _normalize(obj)
+    return json.dumps(normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 def compute_canonical_event_hash(
     sequence_number: int,
+    event_id: str,
     prev_hash: str,
     session_id: str,
     round_id: str,
@@ -119,9 +164,10 @@ def compute_canonical_event_hash(
     execution_time_ms: float,
     error_message: Optional[str] = None,
 ) -> str:
-    """Computes a deterministic SHA-256 hash over canonical audit fields."""
+    """Computes a deterministic SHA-256 hash over canonical audit fields at exact stored precision."""
     canonical_dict = {
         "sequence_number": int(sequence_number),
+        "event_id": str(event_id),
         "prev_hash": str(prev_hash),
         "session_id": str(session_id),
         "round_id": str(round_id),
@@ -129,7 +175,7 @@ def compute_canonical_event_hash(
         "client_bank_id": str(client_bank_id),
         "protocol_family": str(protocol_family),
         "data_structure": str(data_structure),
-        "fpr_parameter": round(float(fpr_parameter), 6),
+        "fpr_parameter": float(fpr_parameter),
         "server_set_size": int(server_set_size),
         "client_set_size": int(client_set_size),
         "server_setup_bytes": int(server_setup_bytes),
@@ -140,10 +186,10 @@ def compute_canonical_event_hash(
         "recipient_of_output": str(recipient_of_output),
         "status": str(status),
         "timestamp": str(timestamp),
-        "execution_time_ms": round(float(execution_time_ms), 4),
+        "execution_time_ms": float(execution_time_ms),
         "error_message": str(error_message or ""),
     }
-    canonical_json = json.dumps(canonical_dict, sort_keys=True, separators=(",", ":"))
+    canonical_json = canonical_json_dumps(canonical_dict)
     return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
 
@@ -175,7 +221,8 @@ class PrivacyLeakageLedger:
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS leakage_events (
                 sequence_number INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT NOT NULL UNIQUE,
+                event_id TEXT NOT NULL UNIQUE,
+                session_id TEXT NOT NULL,
                 round_id TEXT NOT NULL,
                 server_bank_id TEXT NOT NULL,
                 client_bank_id TEXT NOT NULL,
@@ -199,7 +246,18 @@ class PrivacyLeakageLedger:
             );
         """)
         self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS accepted_sessions (
+                session_id TEXT PRIMARY KEY,
+                event_id TEXT NOT NULL,
+                round_id TEXT NOT NULL,
+                accepted_at TEXT NOT NULL
+            );
+        """)
+        self._conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_leakage_round_id ON leakage_events(round_id);
+        """)
+        self._conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_leakage_session_id ON leakage_events(session_id);
         """)
 
     def _row_to_event(self, row: sqlite3.Row) -> LeakageSessionEvent:
@@ -227,27 +285,23 @@ class PrivacyLeakageLedger:
             sequence_number=int(row["sequence_number"]),
             prev_hash=row["prev_hash"],
             event_hash=row["event_hash"],
+            event_id=row["event_id"],
         )
 
     def record_session(self, event: LeakageSessionEvent) -> LeakageSessionEvent:
         """Records a session event into the ledger with ACID transaction, replay prevention, and hash chaining."""
         with self._lock:
-            # Check for replay of existing session_id
+            # Check if this session ID was already accepted in the registry
             cursor = self._conn.execute(
-                "SELECT 1 FROM leakage_events WHERE session_id = ?",
+                "SELECT 1 FROM accepted_sessions WHERE session_id = ?",
                 (event.session_id,),
             )
             if cursor.fetchone() is not None:
-                # Duplicate replay detected! Construct REJECTED_DUPLICATE event with unique session ID
-                rej_cur = self._conn.execute(
-                    "SELECT COUNT(*) as cnt FROM leakage_events WHERE session_id LIKE ?",
-                    (f"{event.session_id}_REJECTED_DUP%",),
-                )
-                cnt = rej_cur.fetchone()["cnt"]
-                dup_suffix = "_REJECTED_DUP" if cnt == 0 else f"_REJECTED_DUP_{cnt + 1}"
-
+                # Duplicate replay detected! Construct REJECTED_DUPLICATE event.
+                # Original session_id remains completely unchanged (un-suffixed).
+                # event_id will be uniquely generated in _insert_event_atomic.
                 rej_event = LeakageSessionEvent(
-                    session_id=f"{event.session_id}{dup_suffix}",
+                    session_id=event.session_id,
                     round_id=event.round_id,
                     server_bank_id=event.server_bank_id,
                     client_bank_id=event.client_bank_id,
@@ -267,11 +321,44 @@ class PrivacyLeakageLedger:
                     execution_time_ms=0.0,
                     error_message=f"Duplicate session ID detected: {event.session_id}",
                 )
-                return self._insert_event_atomic(rej_event)
+                return self._insert_event_atomic(rej_event, register_accepted=False)
 
-            return self._insert_event_atomic(event)
+            # Not yet seen in accepted_sessions. Attempt atomic insert.
+            register_accepted = (event.status == "SUCCESS")
+            try:
+                return self._insert_event_atomic(event, register_accepted=register_accepted)
+            except sqlite3.IntegrityError as ie:
+                if "accepted_sessions" in str(ie) or "UNIQUE constraint failed" in str(ie):
+                    # Concurrent duplicate race caught by SQLite UNIQUE constraint: handle as duplicate rejection
+                    rej_event = LeakageSessionEvent(
+                        session_id=event.session_id,
+                        round_id=event.round_id,
+                        server_bank_id=event.server_bank_id,
+                        client_bank_id=event.client_bank_id,
+                        protocol_family=event.protocol_family,
+                        data_structure=event.data_structure,
+                        fpr_parameter=event.fpr_parameter,
+                        server_set_size=event.server_set_size,
+                        client_set_size=event.client_set_size,
+                        server_setup_bytes=0,
+                        client_request_bytes=0,
+                        server_response_bytes=0,
+                        total_wire_bytes=0,
+                        client_revealed_cardinality=0,
+                        recipient_of_output="NONE",
+                        status="REJECTED_DUPLICATE",
+                        timestamp=datetime.utcnow().isoformat(),
+                        execution_time_ms=0.0,
+                        error_message=f"Duplicate session ID detected (concurrent race): {event.session_id}",
+                    )
+                    return self._insert_event_atomic(rej_event, register_accepted=False)
+                raise
 
-    def _insert_event_atomic(self, event: LeakageSessionEvent) -> LeakageSessionEvent:
+    def _insert_event_atomic(
+        self,
+        event: LeakageSessionEvent,
+        register_accepted: bool = False,
+    ) -> LeakageSessionEvent:
         """Atomically computes sequence, prev_hash, and event_hash, then inserts row in a transaction."""
         self._conn.execute("BEGIN IMMEDIATE;")
         try:
@@ -287,8 +374,12 @@ class PrivacyLeakageLedger:
                 seq_num = last_row["sequence_number"] + 1
                 prev_h = last_row["event_hash"]
 
+            # Distinct unique event ID for every audit record
+            ev_id = event.event_id or f"EVT_{seq_num:06d}"
+
             ev_hash = compute_canonical_event_hash(
                 sequence_number=seq_num,
+                event_id=ev_id,
                 prev_hash=prev_h,
                 session_id=event.session_id,
                 round_id=event.round_id,
@@ -313,19 +404,26 @@ class PrivacyLeakageLedger:
 
             self._conn.execute("""
                 INSERT INTO leakage_events (
-                    sequence_number, session_id, round_id, server_bank_id, client_bank_id,
+                    sequence_number, event_id, session_id, round_id, server_bank_id, client_bank_id,
                     protocol_family, data_structure, fpr_parameter, server_set_size, client_set_size,
                     server_setup_bytes, client_request_bytes, server_response_bytes, total_wire_bytes,
                     client_revealed_cardinality, recipient_of_output, status, timestamp,
                     execution_time_ms, error_message, prev_hash, event_hash
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """, (
-                seq_num, event.session_id, event.round_id, event.server_bank_id, event.client_bank_id,
+                seq_num, ev_id, event.session_id, event.round_id, event.server_bank_id, event.client_bank_id,
                 event.protocol_family, event.data_structure, event.fpr_parameter, event.server_set_size, event.client_set_size,
                 event.server_setup_bytes, event.client_request_bytes, event.server_response_bytes, event.total_wire_bytes,
                 event.client_revealed_cardinality, event.recipient_of_output, event.status, event.timestamp,
                 event.execution_time_ms, event.error_message, prev_h, ev_hash,
             ))
+
+            if register_accepted:
+                self._conn.execute("""
+                    INSERT INTO accepted_sessions (session_id, event_id, round_id, accepted_at)
+                    VALUES (?, ?, ?, ?);
+                """, (event.session_id, ev_id, event.round_id, event.timestamp))
+
             self._conn.execute("COMMIT;")
 
             return LeakageSessionEvent(
@@ -351,9 +449,13 @@ class PrivacyLeakageLedger:
                 sequence_number=seq_num,
                 prev_hash=prev_h,
                 event_hash=ev_hash,
+                event_id=ev_id,
             )
         except Exception:
-            self._conn.execute("ROLLBACK;")
+            try:
+                self._conn.execute("ROLLBACK;")
+            except sqlite3.Error:
+                pass
             raise
 
     def get_events_for_round(self, round_id: str) -> List[LeakageSessionEvent]:
@@ -405,25 +507,65 @@ class PrivacyLeakageLedger:
             )
             return [self._row_to_event(r) for r in cur.fetchall()]
 
-    def verify_chain(self) -> Tuple[bool, Optional[str]]:
-        """Verifies the integrity of the entire cryptographic audit hash chain.
+    def get_latest_event_hash(self) -> Optional[str]:
+        """Returns the event_hash of the most recently recorded event, or None if ledger is empty."""
+        with self._lock:
+            cur = self._conn.execute(
+                "SELECT event_hash FROM leakage_events ORDER BY sequence_number DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            return row["event_hash"] if row else None
 
-        Checks:
-        1. Sequence numbers start at 1 and increment by 1 strictly with no gaps.
-        2. Sequence 1 has prev_hash == 'GENESIS'.
-        3. For sequence > 1, prev_hash matches the prior row's event_hash.
-        4. Recomputes the SHA-256 hash of all canonical fields for each row and
-           verifies it matches the stored event_hash.
+    def verify_chain(
+        self,
+        expected_head_hash: Optional[str] = None,
+        expected_sequence_count: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """Verifies the integrity of the cryptographic audit hash chain.
+
+        INTERNAL DETECTION VS. TAIL TRUNCATION:
+        1. Internal Detection (Autonomous):
+           - Can detect any modification to canonical fields (at exact float/int precision).
+           - Can detect any internal record deletion (e.g. middle records, genesis deletion).
+           - Can detect any record reordering or swapping.
+        2. Tail Truncation (Requires External Checkpoint):
+           - Deleting the final record or rolling back multiple trailing records leaves a
+             self-consistent prefix of the chain (valid sequence numbers and unbroken hashes).
+           - Internal chain inspection alone CANNOT detect silent tail truncation without an
+             external checkpoint.
+           - Passing 'expected_head_hash' or 'expected_sequence_count' verifies the ledger against
+             an external receipt/checkpoint, immediately detecting any tail truncation.
 
         Returns:
-            (True, None) if completely verified.
-            (False, error_description) if modified, deleted, or reordered.
+            (True, None) if completely verified against all internal rules and external checkpoints.
+            (False, error_description) if modified, deleted, truncated, or reordered.
         """
         with self._lock:
             cur = self._conn.execute(
                 "SELECT * FROM leakage_events ORDER BY sequence_number ASC"
             )
             rows = cur.fetchall()
+
+            # External checkpoint validations
+            if expected_sequence_count is not None and len(rows) != expected_sequence_count:
+                return (
+                    False,
+                    f"Chain truncation detected: expected {expected_sequence_count} events, found {len(rows)}",
+                )
+
+            if expected_head_hash is not None:
+                if not rows:
+                    return (
+                        False,
+                        f"Chain truncation detected: expected head hash '{expected_head_hash}', but ledger is empty",
+                    )
+                actual_head_hash = rows[-1]["event_hash"]
+                if actual_head_hash != expected_head_hash:
+                    return (
+                        False,
+                        f"Chain tail truncation or head mismatch detected: expected head hash '{expected_head_hash}', got '{actual_head_hash}'",
+                    )
+
             if not rows:
                 return (True, None)
 
@@ -447,6 +589,7 @@ class PrivacyLeakageLedger:
 
                 computed_hash = compute_canonical_event_hash(
                     sequence_number=actual_seq,
+                    event_id=row["event_id"],
                     prev_hash=actual_prev_hash,
                     session_id=row["session_id"],
                     round_id=row["round_id"],
@@ -480,9 +623,16 @@ class PrivacyLeakageLedger:
 
             return (True, None)
 
-    def verify_integrity(self) -> Tuple[bool, Optional[str]]:
+    def verify_integrity(
+        self,
+        expected_head_hash: Optional[str] = None,
+        expected_sequence_count: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str]]:
         """Convenience alias for verify_chain."""
-        return self.verify_chain()
+        return self.verify_chain(
+            expected_head_hash=expected_head_hash,
+            expected_sequence_count=expected_sequence_count,
+        )
 
     def close(self) -> None:
         """Closes the underlying database connection."""

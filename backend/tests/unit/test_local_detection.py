@@ -126,3 +126,74 @@ def test_get_eligible_psi_tokens(multi_typology_graph):
 
     # Verify strict token opacity
     assert_opaque_tokens(tokens)
+
+
+def test_incomplete_currency_coverage_detection_rule_and_warning():
+    """Confirms unmapped foreign currency transactions trigger RULE_INCOMPLETE_CURRENCY_COVERAGE and audit warning."""
+    G = nx.MultiDiGraph()
+    G.add_node("ACC_FX_PARTIAL", is_local=True, canonical_token="TOK_fx11223344556677", entity_type="CORPORATION", kyc_risk_score=0.40)
+    G.add_node("EXT_USD", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+    G.add_node("EXT_EUR", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+
+    # 1 USD wire (5,000) and 1 EUR wire (50,000)
+    G.add_edge("EXT_USD", "ACC_FX_PARTIAL", key="TX1", amount=5000.0, currency="USD", tx_type="WIRE", timestamp="2026-03-01T10:00:00Z")
+    G.add_edge("EXT_EUR", "ACC_FX_PARTIAL", key="TX2", amount=50000.0, currency="EUR", tx_type="WIRE", timestamp="2026-03-01T11:00:00Z")
+
+    extractor = LocalGraphFeatureExtractor(base_currency="USD")
+    feat = extractor.extract_for_account(G, "ACC_FX_PARTIAL")
+
+    assert feat.currency_coverage_complete is False
+    assert feat.excluded_currencies == ["EUR"]
+    assert feat.excluded_currency_tx_count == 1
+    assert feat.total_in_amount == 5000.0  # Only USD counted
+
+    engine = LocalRuleDetectionEngine()
+    alert = engine.evaluate_account(feat)
+
+    # 1. Warning & Rule assertions
+    assert "RULE_INCOMPLETE_CURRENCY_COVERAGE" in alert.triggered_rules
+    assert any("Financial totals reflect partial activity" in exp for exp in alert.rule_explanations)
+
+    # 2. Risk Score Policy assertion: Missing FX mapping is a data warning, NOT an illicit behavior indicator
+    # Expected score: KYC component only (0.40 * 0.20 = 0.08), zero artificial inflation (+0.20 omitted)
+    assert alert.local_risk_score == 0.08
+    assert alert.is_suspicious is False
+    assert alert.is_eligible_for_psi is False
+
+    # 3. Supporting Evidence assertions
+    assert alert.supporting_evidence["currency_coverage_complete"] is False
+    assert alert.supporting_evidence["excluded_currencies"] == ["EUR"]
+    assert alert.supporting_evidence["excluded_currency_tx_count"] == 1
+    assert "EUR" in alert.supporting_evidence["coverage_warning"]
+
+
+def test_incomplete_currency_coverage_with_actual_suspicious_typology():
+    """Confirms data completeness warning coexists with genuine AML typologies without score interference."""
+    G = nx.MultiDiGraph()
+    G.add_node("ACC_FX_SMURF", is_local=True, canonical_token="TOK_fx_smurf_9999", entity_type="INDIVIDUAL", kyc_risk_score=0.50)
+    G.add_node("EXT_USD", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+    G.add_node("EXT_EUR", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+
+    # Structured USD deposits (triggering RULE_STRUCTURING_SMURFING: +0.40) + 1 foreign EUR transaction
+    G.add_edge("EXT_USD", "ACC_FX_SMURF", key="T1", amount=9500.0, currency="USD", tx_type="CASH_DEPOSIT", timestamp="2026-03-01T08:00:00Z")
+    G.add_edge("EXT_USD", "ACC_FX_SMURF", key="T2", amount=9600.0, currency="USD", tx_type="CASH_DEPOSIT", timestamp="2026-03-01T09:00:00Z")
+    G.add_edge("EXT_EUR", "ACC_FX_SMURF", key="T3", amount=40000.0, currency="EUR", tx_type="WIRE", timestamp="2026-03-01T10:00:00Z")
+
+    extractor = LocalGraphFeatureExtractor(base_currency="USD")
+    feat = extractor.extract_for_account(G, "ACC_FX_SMURF")
+
+    engine = LocalRuleDetectionEngine(suspicion_threshold=0.50)
+    alert = engine.evaluate_account(feat)
+
+    # Both the genuine typologies and data completeness warning are present
+    assert "RULE_STRUCTURING_SMURFING" in alert.triggered_rules
+    assert "RULE_HIGH_FAN_IN" in alert.triggered_rules
+    assert "RULE_INCOMPLETE_CURRENCY_COVERAGE" in alert.triggered_rules
+
+    # Score: Structuring (0.40) + Fan-In (0.35) + KYC (0.50 * 0.20 = 0.10) = 0.85
+    # Confirms currency completeness warning added 0.00 to the score
+    assert alert.local_risk_score == 0.85
+    assert alert.is_suspicious is True
+    assert alert.is_eligible_for_psi is True
+    assert alert.supporting_evidence["currency_coverage_complete"] is False
+    assert alert.supporting_evidence["excluded_currencies"] == ["EUR"]

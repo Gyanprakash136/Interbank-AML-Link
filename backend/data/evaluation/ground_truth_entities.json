@@ -1,0 +1,417 @@
+{
+  "metadata": {
+    "description": "Evaluation-only ground-truth mapping. STRICTLY FORBIDDEN to be read by operational modules.",
+    "seed": 42,
+    "bank_token_counts": {
+      "bank_a": 15,
+      "bank_b": 15,
+      "bank_c": 14
+    },
+    "expected_pairwise_psi_overlaps": {
+      "bank_a_and_bank_b": [
+        "TOK_cfc9afe60a6306d0",
+        "TOK_d3de48ba1c9f1337",
+        "TOK_fcc90d38c0240418"
+      ],
+      "bank_b_and_bank_c": [
+        "TOK_cf30f5dddce79c99",
+        "TOK_d3de48ba1c9f1337"
+      ],
+      "bank_a_and_bank_c": [
+        "TOK_a891160d185e175a",
+        "TOK_d3de48ba1c9f1337"
+      ],
+      "all_three": [
+        "TOK_d3de48ba1c9f1337"
+      ]
+    }
+  },
+  "entities": [
+    {
+      "global_entity_id": "GT_ENT_001_SYNDICATE",
+      "canonical_token": "TOK_d3de48ba1c9f1337",
+      "is_laundering": true,
+      "typology": "THREE_WAY_SYNDICATE",
+      "entity_type": "CORPORATION",
+      "accounts": {
+        "bank_a": "ACC_A_1001",
+        "bank_b": "ACC_B_2001",
+        "bank_c": "ACC_C_3001"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_002_SMURF_AB",
+      "canonical_token": "TOK_cfc9afe60a6306d0",
+      "is_laundering": true,
+      "typology": "STRUCTURING_SMURFING",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1002",
+        "bank_b": "ACC_B_2002"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_003_FAN_BC",
+      "canonical_token": "TOK_cf30f5dddce79c99",
+      "is_laundering": true,
+      "typology": "FAN_IN_OUT_LAYERING",
+      "entity_type": "CORPORATION",
+      "accounts": {
+        "bank_b": "ACC_B_2003",
+        "bank_c": "ACC_C_3003"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_004_SHELL_AC",
+      "canonical_token": "TOK_a891160d185e175a",
+      "is_laundering": true,
+      "typology": "SHELL_ROUTING",
+      "entity_type": "CORPORATION",
+      "accounts": {
+        "bank_a": "ACC_A_1004",
+        "bank_c": "ACC_C_3004"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_005_BENIGN_CORP_AB",
+      "canonical_token": "TOK_fcc90d38c0240418",
+      "is_laundering": false,
+      "typology": "BENIGN_COMMERCIAL",
+      "entity_type": "CORPORATION",
+      "accounts": {
+        "bank_a": "ACC_A_1005",
+        "bank_b": "ACC_B_2005"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_01",
+      "canonical_token": "TOK_047358ef8493e069",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1101"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_01",
+      "canonical_token": "TOK_5e19774c947a3ba0",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2101"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_01",
+      "canonical_token": "TOK_d252102ce0c458d1",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3101"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_02",
+      "canonical_token": "TOK_407f91972a3d2ffb",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1102"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_02",
+      "canonical_token": "TOK_50d4671d60ef9973",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2102"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_02",
+      "canonical_token": "TOK_e79bfa94b967fbd5",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3102"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_03",
+      "canonical_token": "TOK_c9265c24129e17da",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1103"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_03",
+      "canonical_token": "TOK_e97bc02432e4d781",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2103"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_03",
+      "canonical_token": "TOK_a06ad830622b2b2e",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3103"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_04",
+      "canonical_token": "TOK_e19c8f9775900d90",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1104"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_04",
+      "canonical_token": "TOK_a23a0429e4bc20e9",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2104"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_04",
+      "canonical_token": "TOK_2a94480599b7b88a",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3104"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_05",
+      "canonical_token": "TOK_8e998bde95c4523b",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1105"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_05",
+      "canonical_token": "TOK_7e65e100817608b0",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2105"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_05",
+      "canonical_token": "TOK_d69892c5015bdd14",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3105"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_06",
+      "canonical_token": "TOK_d0fbfd99ebc15842",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1106"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_06",
+      "canonical_token": "TOK_cb3aa9a3a182bc4d",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2106"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_06",
+      "canonical_token": "TOK_e36f03bec341b056",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3106"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_07",
+      "canonical_token": "TOK_01a99d1ddd74d776",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1107"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_07",
+      "canonical_token": "TOK_13c9d8ca0dc5a1da",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2107"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_07",
+      "canonical_token": "TOK_e6e32e2bd3e4d8cf",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3107"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_08",
+      "canonical_token": "TOK_4b63e131f7668a96",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1108"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_08",
+      "canonical_token": "TOK_016bf16bf195e404",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2108"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_08",
+      "canonical_token": "TOK_9470125d021b3ab2",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3108"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_09",
+      "canonical_token": "TOK_8860c3459c8ba482",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1109"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_09",
+      "canonical_token": "TOK_0fab450cc77a4214",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2109"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_09",
+      "canonical_token": "TOK_ea21624a897a4678",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3109"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_10",
+      "canonical_token": "TOK_6513bbb0f6c1b804",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1110"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_10",
+      "canonical_token": "TOK_8a9347d77ac62caa",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2110"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_10",
+      "canonical_token": "TOK_7a5cc7102bc72576",
+      "is_laundering": false,
+      "typology": "BENIGN_RETAIL",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3110"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_A_LOCAL_LAUNDER",
+      "canonical_token": "TOK_1470eb8b97106cbd",
+      "is_laundering": true,
+      "typology": "LOCAL_STRUCTURING",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_a": "ACC_A_1199"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_B_LOCAL_LAUNDER",
+      "canonical_token": "TOK_328a4ecdefb6eb09",
+      "is_laundering": true,
+      "typology": "LOCAL_VELOCITY_CHURN",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_b": "ACC_B_2199"
+      }
+    },
+    {
+      "global_entity_id": "GT_ENT_C_LOCAL_LAUNDER",
+      "canonical_token": "TOK_3ff69ab1c23938b3",
+      "is_laundering": true,
+      "typology": "LOCAL_DORMANT_SURGE",
+      "entity_type": "INDIVIDUAL",
+      "accounts": {
+        "bank_c": "ACC_C_3199"
+      }
+    }
+  ]
+}

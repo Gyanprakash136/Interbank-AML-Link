@@ -1,0 +1,332 @@
+{
+  "TX_BANK_A_00001": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_A_00002": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_A_00003": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00001": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_B_00002": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00001": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_C_00002": {
+    "is_laundering": true,
+    "typology": "THREE_WAY_SYNDICATE",
+    "pattern_id": "PAT_SYNDICATE_01",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00004": {
+    "is_laundering": true,
+    "typology": "STRUCTURING_SMURFING",
+    "pattern_id": "PAT_SMURF_02",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_A_00005": {
+    "is_laundering": true,
+    "typology": "STRUCTURING_SMURFING",
+    "pattern_id": "PAT_SMURF_02",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_A_00006": {
+    "is_laundering": true,
+    "typology": "STRUCTURING_SMURFING",
+    "pattern_id": "PAT_SMURF_02",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_A_00007": {
+    "is_laundering": true,
+    "typology": "STRUCTURING_SMURFING",
+    "pattern_id": "PAT_SMURF_02",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00003": {
+    "is_laundering": true,
+    "typology": "STRUCTURING_SMURFING",
+    "pattern_id": "PAT_SMURF_02",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_B_00004": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_B_00005": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_B_00006": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00003": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_C_00004": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_C_00005": {
+    "is_laundering": true,
+    "typology": "FAN_IN_OUT_LAYERING",
+    "pattern_id": "PAT_FAN_03",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00008": {
+    "is_laundering": true,
+    "typology": "SHELL_ROUTING",
+    "pattern_id": "PAT_SHELL_04",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_C_00006": {
+    "is_laundering": true,
+    "typology": "SHELL_ROUTING",
+    "pattern_id": "PAT_SHELL_04",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00009": {
+    "is_laundering": false,
+    "typology": "BENIGN_COMMERCIAL",
+    "pattern_id": "PAT_BENIGN_05",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00007": {
+    "is_laundering": false,
+    "typology": "BENIGN_COMMERCIAL",
+    "pattern_id": "PAT_BENIGN_05",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_A_00010": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_1",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00008": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_1",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00007": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_1",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00011": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_2",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00009": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_2",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00008": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_2",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00012": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_3",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00010": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_3",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00009": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_3",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00013": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_4",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00011": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_4",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00010": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_4",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00014": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_5",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00012": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_5",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00011": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_5",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00015": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_6",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00013": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_6",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00012": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_6",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00016": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_7",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00014": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_7",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00013": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_7",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00017": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_8",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00015": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_8",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00014": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_8",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00018": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_9",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00016": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_9",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00015": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_9",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00019": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_A_10",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00017": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_B_10",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00016": {
+    "is_laundering": false,
+    "typology": "BENIGN_RETAIL",
+    "pattern_id": "PAT_RETAIL_C_10",
+    "bank_id": "bank_c"
+  },
+  "TX_BANK_A_00020": {
+    "is_laundering": true,
+    "typology": "LOCAL_STRUCTURING",
+    "pattern_id": "PAT_LOCAL_A",
+    "bank_id": "bank_a"
+  },
+  "TX_BANK_B_00018": {
+    "is_laundering": true,
+    "typology": "LOCAL_VELOCITY_CHURN",
+    "pattern_id": "PAT_LOCAL_B",
+    "bank_id": "bank_b"
+  },
+  "TX_BANK_C_00017": {
+    "is_laundering": true,
+    "typology": "LOCAL_DORMANT_SURGE",
+    "pattern_id": "PAT_LOCAL_C",
+    "bank_id": "bank_c"
+  }
+}

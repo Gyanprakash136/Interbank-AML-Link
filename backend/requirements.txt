@@ -1,0 +1,41 @@
+# SignalMesh — Backend Dependencies
+# Python 3.11.8 required (verified: openmined_psi 2.0.6 has no cp312+ wheel)
+#
+# Setup:
+#   python3.11 -m venv .venv311
+#   source .venv311/bin/activate
+#   pip install -r requirements.txt
+
+# ── PSI Core ──────────────────────────────────────────────────────────────────
+# Installed as:    pip install "openmined.psi==2.0.6"
+# Importable as:   import private_set_intersection.python as psi
+# NOT importable:  openmined_psi / openmined.psi
+# Wheel available: Python 3.11, macOS arm64 (macosx_14_0_arm64)
+# s390x status:    UNVERIFIED — no PyPI wheel; source build required on LinuxONE
+openmined.psi==2.0.6
+protobuf==6.30.2          # pinned — openmined.psi requires this exact version
+
+# ── Data Processing ───────────────────────────────────────────────────────────
+pandas>=2.2.0,<3.0
+numpy>=1.26.0,<2.0
+
+# ── Graph Analysis ────────────────────────────────────────────────────────────
+networkx>=3.3,<4.0
+
+# ── API Framework (used from Stage 7) ────────────────────────────────────────
+fastapi>=0.111.0,<1.0
+uvicorn[standard]>=0.29.0,<1.0
+pydantic>=2.7.0,<3.0
+
+# ── Database (used from Stage 7) ─────────────────────────────────────────────
+sqlalchemy>=2.0.30,<3.0
+aiosqlite>=0.20.0,<1.0
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.2.0,<9.0
+pytest-asyncio>=0.23.0,<1.0
+httpx>=0.27.0,<1.0        # FastAPI test client
+
+# ── Optional ML (add after rules baseline is working — Stage 4+) ─────────────
+# scikit-learn>=1.5.0,<2.0
+# xgboost>=2.0.0,<3.0

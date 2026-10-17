@@ -72,12 +72,25 @@ class LocalAccountFeatures:
         return asdict(self)
 
 
+class CurrencyMismatchError(ValueError):
+    """Raised when transactions have multiple incompatible currencies without exchange rates."""
+    pass
+
+
 class LocalGraphFeatureExtractor:
     """Extracts explainable features from a bank's local NetworkX graph."""
 
-    def __init__(self, structuring_min: float = 9000.0, structuring_max: float = 9999.99):
+    def __init__(
+        self,
+        structuring_min: float = 9000.0,
+        structuring_max: float = 9999.99,
+        base_currency: str = "USD",
+        exchange_rates: Optional[Dict[str, float]] = None,
+    ):
         self.structuring_min = structuring_min
         self.structuring_max = structuring_max
+        self.base_currency = base_currency.upper()
+        self.exchange_rates = exchange_rates
 
     def extract_for_account(self, G: nx.MultiDiGraph, account_id: str) -> LocalAccountFeatures:
         """Extracts explainable feature metrics for a single node in G."""
@@ -96,10 +109,12 @@ class LocalGraphFeatureExtractor:
         in_senders = {u for u, v, d in in_edges}
         in_degree = len(in_senders)
 
-        in_amounts = [float(d.get("amount", 0.0)) for u, v, d in in_edges]
-        total_in = sum(in_amounts)
-        avg_in = (total_in / in_tx_count) if in_tx_count > 0 else 0.0
-        max_in = max(in_amounts) if in_amounts else 0.0
+        # Collect inbound amounts by currency
+        in_by_curr: Dict[str, List[float]] = {}
+        for u, v, d in in_edges:
+            c = str(d.get("currency", self.base_currency)).upper()
+            amt = float(d.get("amount", 0.0))
+            in_by_curr.setdefault(c, []).append(amt)
 
         # Outbound transactions
         out_edges = list(G.out_edges(account_id, data=True))
@@ -107,7 +122,44 @@ class LocalGraphFeatureExtractor:
         out_receivers = {v for u, v, d in out_edges}
         out_degree = len(out_receivers)
 
-        out_amounts = [float(d.get("amount", 0.0)) for u, v, d in out_edges]
+        # Collect outbound amounts by currency
+        out_by_curr: Dict[str, List[float]] = {}
+        for u, v, d in out_edges:
+            c = str(d.get("currency", self.base_currency)).upper()
+            amt = float(d.get("amount", 0.0))
+            out_by_curr.setdefault(c, []).append(amt)
+
+        # Multi-currency handling: amounts in different currencies must NEVER be added as if identical
+        all_currencies = set(in_by_curr.keys()) | set(out_by_curr.keys())
+        if self.exchange_rates is not None:
+            # Convert all amounts to base_currency using explicit exchange rate mapping
+            in_amounts = []
+            for c, amls in in_by_curr.items():
+                rate = self.exchange_rates.get(c, 1.0 if c == self.base_currency else None)
+                if rate is None:
+                    raise CurrencyMismatchError(f"No exchange rate configured for currency '{c}'")
+                in_amounts.extend([a * rate for a in amls])
+
+            out_amounts = []
+            for c, amls in out_by_curr.items():
+                rate = self.exchange_rates.get(c, 1.0 if c == self.base_currency else None)
+                if rate is None:
+                    raise CurrencyMismatchError(f"No exchange rate configured for currency '{c}'")
+                out_amounts.extend([a * rate for a in amls])
+        elif len(all_currencies) <= 1:
+            # Single uniform currency observed
+            in_amounts = [amt for amls in in_by_curr.values() for amt in amls]
+            out_amounts = [amt for amls in out_by_curr.values() for amt in amls]
+        else:
+            # Multi-currency present without exchange rates:
+            # Strictly isolate to base_currency transactions, never adding differing currencies
+            in_amounts = in_by_curr.get(self.base_currency, [])
+            out_amounts = out_by_curr.get(self.base_currency, [])
+
+        total_in = sum(in_amounts)
+        avg_in = (total_in / in_tx_count) if in_tx_count > 0 else 0.0
+        max_in = max(in_amounts) if in_amounts else 0.0
+
         total_out = sum(out_amounts)
         avg_out = (total_out / out_tx_count) if out_tx_count > 0 else 0.0
         max_out = max(out_amounts) if out_amounts else 0.0
@@ -121,8 +173,22 @@ class LocalGraphFeatureExtractor:
         cash_amount = 0.0
 
         for u, v, d in in_edges + out_edges:
-            amt = float(d.get("amount", 0.0))
+            c = str(d.get("currency", self.base_currency)).upper()
+            raw_amt = float(d.get("amount", 0.0))
             tx_type = str(d.get("tx_type", "")).upper()
+
+            # Normalize amount to base currency for threshold evaluations
+            if self.exchange_rates is not None:
+                rate = self.exchange_rates.get(c, 1.0 if c == self.base_currency else None)
+                if rate is None:
+                    continue
+                amt = raw_amt * rate
+            elif c == self.base_currency or len(all_currencies) <= 1:
+                amt = raw_amt
+            else:
+                # Omit incompatible currency amounts from USD structuring rules
+                continue
+
             if self.structuring_min <= amt <= self.structuring_max:
                 structuring_count += 1
             if "CASH" in tx_type:

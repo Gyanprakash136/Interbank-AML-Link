@@ -90,3 +90,39 @@ def test_feature_extractor_extract_all_local(test_graph):
     assert "LOCAL_MULE" in all_feats
     assert "LOCAL_BENIGN" in all_feats
     assert "EXT_ATM_1" not in all_feats
+
+
+def test_feature_extractor_multi_currency_isolation():
+    """Confirms that amounts in differing currencies are never added as if identical (Phase 6.14)."""
+    G = nx.MultiDiGraph()
+    G.add_node("LOCAL_MULTI", is_local=True, canonical_token="TOK_curr_01", entity_type="INDIVIDUAL", kyc_risk_score=0.20)
+    G.add_node("EXT_USD", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+    G.add_node("EXT_EUR", is_local=False, canonical_token=None, entity_type="EXTERNAL", kyc_risk_score=0.0)
+
+    # Inbound: 5,000 USD and 5,000 EUR
+    G.add_edge("EXT_USD", "LOCAL_MULTI", key="TX1", amount=5000.0, currency="USD", tx_type="WIRE", timestamp="2026-03-01T10:00:00Z")
+    G.add_edge("EXT_EUR", "LOCAL_MULTI", key="TX2", amount=5000.0, currency="EUR", tx_type="WIRE", timestamp="2026-03-01T11:00:00Z")
+
+    # 1. Without exchange rates: strictly isolates to base_currency (USD), NEVER adds EUR to USD
+    extractor_no_rates = LocalGraphFeatureExtractor(base_currency="USD")
+    feat_no_rates = extractor_no_rates.extract_for_account(G, "LOCAL_MULTI")
+    assert feat_no_rates.total_in_amount == 5000.0  # Only the USD amount is aggregated, NOT 10,000.0!
+
+    # 2. With explicit exchange rates: EUR is converted to USD before aggregation
+    extractor_with_rates = LocalGraphFeatureExtractor(
+        base_currency="USD",
+        exchange_rates={"USD": 1.0, "EUR": 1.10},
+    )
+    feat_with_rates = extractor_with_rates.extract_for_account(G, "LOCAL_MULTI")
+    # 5,000 USD + (5,000 * 1.10 USD) = 5,000 + 5,500 = 10,500 USD
+    assert feat_with_rates.total_in_amount == 10500.0
+
+    # 3. Missing rate for foreign currency raises CurrencyMismatchError
+    from app.graph.features import CurrencyMismatchError
+    extractor_missing_rate = LocalGraphFeatureExtractor(
+        base_currency="USD",
+        exchange_rates={"USD": 1.0},  # EUR missing
+    )
+    with pytest.raises(CurrencyMismatchError, match="No exchange rate configured"):
+        extractor_missing_rate.extract_for_account(G, "LOCAL_MULTI")
+

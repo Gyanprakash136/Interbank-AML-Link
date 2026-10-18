@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalMesh — Privacy-Preserving AML Collaboration</title>
+  <meta name="description" content="SignalMesh lets banks compare flagged entities using Private Set Intersection, so analysts can see where their cases overlap without sending transaction records to a central party.">
+
+  <!-- Google Fonts: Plus Jakarta Sans with system fallbacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       SignalMesh Design System — Institutional Dark-Fintech
+       Palette: Deep neutral canvas, quiet surfaces, single restrained violet accent.
+       No neon blooming, no gradient text, no em-dash slogans.
+       ========================================================================== */
+    :root {
+      --bg: #070709;
+      --surface: #101014;
+      --surface-raised: #15151b;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --surface-border-subtle: rgba(255, 255, 255, 0.05);
+
+      --text: #ffffff;
+      --text-muted: #b5b3be;
+      --text-subtle: #7a7886;
+
+      --violet: #8b5cf6;
+      --violet-muted: #a78bfa;
+      --violet-subtle: rgba(139, 92, 246, 0.12);
+      --violet-border: rgba(139, 92, 246, 0.28);
+
+      --button-bg: #f5f5f7;
+      --button-text: #09090b;
+
+      --content-width: 1140px;
+      --radius-card: 16px;
+      --radius-sm: 8px;
+      --radius-pill: 9999px;
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-family);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    section[id] {
+      scroll-margin-top: 84px;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--violet-muted);
+      outline-offset: 3px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.25;
+    }
+
+    p {
+      color: var(--text-muted);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: var(--content-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.2s var(--ease-out);
+      text-decoration: none;
+      white-space: nowrap;
+      min-height: 42px;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .btn-primary {
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border-color: var(--button-bg);
+    }
+
+    .btn-primary:hover {
+      background-color: #ffffff;
+      border-color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border-color: var(--surface-border);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      padding: 7px 15px;
+      font-size: 12.5px;
+      min-height: 34px;
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.2s var(--ease-out);
+    }
+
+    .btn:hover svg {
+      transform: translateX(2px);
+    }
+
+    /* Eyebrow Label */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--violet-muted);
+      background: var(--violet-subtle);
+      border: 1px solid var(--violet-border);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+    }
+
+    .eyebrow-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: var(--violet);
+    }
+
+    /* ==========================================================================
+       Header Component
+       ========================================================================== */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      z-index: 1000;
+      background: rgba(7, 7, 9, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--surface-border);
+      transition: background-color 0.2s var(--ease-out);
+    }
+
+    .site-header.scrolled {
+      background: rgba(7, 7, 9, 0.94);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .header-inner {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: #181822;
+      border: 1px solid var(--violet-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-text-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #FFFFFF;
+      line-height: 1.1;
+    }
+
+    .brand-descriptor {
+      font-size: 10px;
+      color: var(--text-subtle);
+      letter-spacing: 0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      list-style: none;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: #FFFFFF;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mobile-menu-toggle {
+      display: none;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Mobile Drawer */
+    .mobile-nav-drawer {
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(7, 7, 9, 0.98);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: all 0.2s var(--ease-out);
+    }
+
+    .mobile-nav-drawer.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .mobile-nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      list-style: none;
+    }
+
+    .mobile-nav-link {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--surface-border);
+      display: block;
+    }
+
+    .mobile-nav-link:hover {
+      color: #FFFFFF;
+    }
+
+    /* ==========================================================================
+       Hero Section — Subdued Cinematic Backdrop
+       ========================================================================== */
+    .hero-section {
+      position: relative;
+      min-height: 90vh;
+      min-height: 90svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 110px 24px 64px;
+      text-align: center;
+    }
+
+    .hero-media-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .hero-bg-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0.35;
+      filter: grayscale(15%);
+    }
+
+    .hero-bg-poster {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0.35;
+      display: none;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background:
+        radial-gradient(circle at center, rgba(7, 7, 9, 0.45) 0%, rgba(7, 7, 9, 0.85) 60%, #070709 100%),
+        linear-gradient(to bottom, rgba(7, 7, 9, 0.3) 0%, transparent 25%, transparent 70%, #070709 100%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      margin: 0 auto;
+    }
+
+    .hero-title {
+      font-size: clamp(2.3rem, 5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      color: #FFFFFF;
+      text-wrap: balance;
+    }
+
+    .hero-title .line {
+      display: block;
+      word-break: keep-all;
+    }
+
+    .hero-copy {
+      font-size: clamp(1rem, 1.6vw, 1.12rem);
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 680px;
+      font-weight: 400;
+    }
+
+    .hero-supporting-line {
+      font-size: 13px;
+      color: var(--violet-muted);
+      font-weight: 500;
+      margin-top: -4px;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Staggered entrance animation */
+    .animate-in {
+      opacity: 0;
+      transform: translateY(14px);
+      animation: heroEntrance 0.75s var(--ease-out) forwards;
+    }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.16s; }
+    .delay-3 { animation-delay: 0.28s; }
+    .delay-4 { animation-delay: 0.40s; }
+
+    @keyframes heroEntrance {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ==========================================================================
+       General Section Architecture & Typography
+       ========================================================================== */
+    .section {
+      padding: 88px 0;
+      position: relative;
+      border-top: 1px solid var(--surface-border-subtle);
+    }
+
+    .section-header {
+      margin-bottom: 48px;
+      text-align: left;
+      max-width: 720px;
+    }
+
+    .section-title {
+      font-size: clamp(1.7rem, 2.8vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 14px;
+      color: #FFFFFF;
+    }
+
+    .section-body {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* Section A — Platform: Clean Text Columns */
+    .platform-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .platform-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-top: 1px solid var(--surface-border);
+      padding-top: 20px;
+    }
+
+    .platform-col-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .platform-col-text {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Section B — How it works: Numbered Progression */
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .step-index {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--violet-muted);
+      background: var(--violet-subtle);
+      border: 1px solid var(--violet-border);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      align-self: flex-start;
+    }
+
+    .step-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .step-card-text {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Section C — Privacy: Clear Contrast of Boundaries */
+    .privacy-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .privacy-box {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .privacy-box-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--violet-muted);
+    }
+
+    .privacy-box-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .privacy-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .privacy-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .privacy-item svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      margin-top: 3px;
+      color: var(--violet-muted);
+    }
+
+    /* Section D — Architecture: Diagram & Text */
+    .arch-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .arch-svg-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--surface-border-subtle);
+      border-radius: var(--radius-sm);
+      background: #0a0a0e;
+      padding: 20px;
+    }
+
+    .arch-svg {
+      width: 100%;
+      min-width: 680px;
+      height: auto;
+      display: block;
+    }
+
+    .arch-caption {
+      font-size: 12px;
+      color: var(--text-subtle);
+      line-height: 1.5;
+    }
+
+    .tech-stack-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tech-pill {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 11px;
+      color: var(--text-subtle);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--surface-border);
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+    }
+
+    /* Section E — Prototype Scope: Quiet Secondary Style */
+    .scope-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .scope-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .scope-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      max-width: 820px;
+    }
+
+    /* Closing CTA Card */
+    .closing-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 56px 36px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin: 32px 0 64px;
+    }
+
+    .closing-title {
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .closing-text {
+      font-size: 14.5px;
+      color: var(--text-muted);
+      max-width: 580px;
+      line-height: 1.6;
+    }
+
+    .closing-actions {
+      margin-top: 6px;
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--surface-border);
+      padding: 48px 0 36px;
+      background: var(--bg);
+    }
+
+    .footer-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+
+    .footer-brand-wrap {
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      list-style: none;
+      flex-wrap: wrap;
+    }
+
+    .footer-link {
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: color 0.15s ease;
+    }
+
+    .footer-link:hover {
+      color: #FFFFFF;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--surface-border-subtle);
+      padding-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 11.5px;
+      color: var(--text-subtle);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .platform-columns {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .steps-row {
+        grid-template-columns: 1fr;
+      }
+      .privacy-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .mobile-menu-toggle {
+        display: flex;
+      }
+      .brand-descriptor {
+        display: none;
+      }
+      .hero-section {
+        padding: 96px 20px 48px;
+        min-height: auto;
+      }
+      .section {
+        padding: 64px 0;
+      }
+      .closing-card {
+        padding: 40px 20px;
+      }
+      .footer-top {
+        flex-direction: column;
+      }
+      .footer-links {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .hero-cta-group {
+        flex-direction: column;
+        width: 100%;
+      }
+      .hero-cta-group .btn {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .hero-bg-video {
+        display: none !important;
+      }
+      .hero-bg-poster {
+        display: block !important;
+      }
+      .animate-in {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       Header / Navigation Bar
+       ========================================================================== -->
+  <header id="siteHeader" class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand" aria-label="SignalMesh Home">
+        <div class="brand-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+            <path d="M2 12h20"/>
+          </svg>
+        </div>
+        <div class="brand-text-wrap">
+          <span class="brand-name">SignalMesh</span>
+          <span class="brand-descriptor">Privacy-preserving AML collaboration</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Primary Navigation">
+        <ul class="nav-links">
+          <li><a href="#platform" class="nav-link">Platform</a></li>
+          <li><a href="#how-it-works" class="nav-link">How it works</a></li>
+          <li><a href="#privacy" class="nav-link">Privacy</a></li>
+          <li><a href="#architecture" class="nav-link">Architecture</a></li>
+          <li><a href="#prototype-scope" class="nav-link">Prototype scope</a></li>
+        </ul>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="index.html" class="btn btn-primary btn-sm">
+          Explore the platform
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobileMenuBtn" class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileNavDrawer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Menu -->
+  <div id="mobileNavDrawer" class="mobile-nav-drawer" aria-hidden="true">
+    <ul class="mobile-nav-list">
+      <li><a href="#platform" class="mobile-nav-link" onclick="closeMobileNav()">Platform</a></li>
+      <li><a href="#how-it-works" class="mobile-nav-link" onclick="closeMobileNav()">How it works</a></li>
+      <li><a href="#privacy" class="mobile-nav-link" onclick="closeMobileNav()">Privacy</a></li>
+      <li><a href="#architecture" class="mobile-nav-link" onclick="closeMobileNav()">Architecture</a></li>
+      <li><a href="#prototype-scope" class="mobile-nav-link" onclick="closeMobileNav()">Prototype scope</a></li>
+    </ul>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+      <a href="index.html" class="btn btn-primary" style="width: 100%;">
+        Explore the platform &rarr;
+      </a>
+    </div>
+  </div>
+
+  <main id="mainContent">
+
+    <!-- ==========================================================================
+         Hero Section
+         ========================================================================== -->
+    <section class="hero-section" aria-labelledby="heroHeadline">
+      <!-- Background Media: Subdued Dot-Matrix Globe Video + Poster Fallback -->
+      <div class="hero-media-wrap" aria-hidden="true">
+        <video id="heroVideo" class="hero-bg-video" autoplay muted loop playsinline poster="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/82e7eb75-c65f-490a-99b5-f3d1cad54200.webp">
+          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260912_104036_bd6924f6-3c8e-417e-8465-6d03c8c2e9e6.mp4" type="video/mp4">
+        </video>
+        <img id="heroPoster" class="hero-bg-poster" src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/82e7eb75-c65f-490a-99b5-f3d1cad54200.webp" alt="">
+      </div>
+
+      <!-- Vignette Overlay -->
+      <div class="hero-overlay" aria-hidden="true"></div>
+
+      <!-- Hero Content -->
+      <div class="hero-content">
+        <div class="eyebrow animate-in delay-1">
+          <span class="eyebrow-dot"></span>
+          <span>AML COLLABORATION FOR BANKS</span>
+        </div>
+
+        <h1 id="heroHeadline" class="hero-title animate-in delay-2">
+          <span class="line">Find overlapping suspects across banks.</span>
+          <span class="line">Keep transaction data in-house.</span>
+        </h1>
+
+        <p class="hero-copy animate-in delay-3">
+          SignalMesh lets banks compare flagged entities using Private Set Intersection, so analysts can see where their cases overlap without sending transaction records to a central party.
+        </p>
+
+        <p class="hero-supporting-line animate-in delay-3">
+          Matches are leads for analyst review, not findings of financial crime.
+        </p>
+
+        <div class="hero-cta-group animate-in delay-4">
+          <a href="index.html" class="btn btn-primary">
+            Explore the platform
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+          <a href="#how-it-works" class="btn btn-secondary">
+            How it works
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <polyline points="19 12 12 19 5 12"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Section: Platform
+         ========================================================================== -->
+    <section id="platform" class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">What each bank keeps, and what it compares</h2>
+          <p class="section-body">
+            Every institution analyzes its own transaction network. When a bank chooses to compare, only tokens for flagged entities enter the private matching step.
+          </p>
+        </div>
+
+        <div class="platform-columns">
+          <div class="platform-col">
+            <h3 class="platform-col-title">Local risk analysis</h3>
+            <p class="platform-col-text">
+              Builds a graph from a bank's own transactions and surfaces indicators an analyst can inspect and explain.
+            </p>
+          </div>
+
+          <div class="platform-col">
+            <h3 class="platform-col-title">Private matching</h3>
+            <p class="platform-col-text">
+              Uses a PSI protocol to find entities two banks have both flagged, without either side sharing its full candidate list.
+            </p>
+          </div>
+
+          <div class="platform-col">
+            <h3 class="platform-col-title">Session audit trail</h3>
+            <p class="platform-col-text">
+              Records each collaboration session in a hash-chained ledger. The ledger shows tampering within the local chain; it is not an external proof.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Section: How It Works
+         ========================================================================== -->
+    <section id="how-it-works" class="section">
+      <div class="container">
+        <!-- Also support #workflow anchor for backward compatibility -->
+        <div id="workflow" style="position: relative; top: -84px;"></div>
+
+        <div class="section-header">
+          <h2 class="section-title">How it works</h2>
+          <p class="section-body">
+            Collaboration follows three sequential phases designed to keep raw customer records inside the originating institution.
+          </p>
+        </div>
+
+        <div class="steps-row">
+          <div class="step-card">
+            <span class="step-index">01</span>
+            <h3 class="step-card-title">Analyze locally</h3>
+            <p class="step-card-text">
+              Each bank identifies candidate entities and risk indicators from its own data.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-index">02</span>
+            <h3 class="step-card-title">Match privately</h3>
+            <p class="step-card-text">
+              Two banks run PSI to find exact overlaps between their candidate sets.
+            </p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-index">03</span>
+            <h3 class="step-card-title">Review with context</h3>
+            <p class="step-card-text">
+              Each bank keeps its own graph and evidence, and analysts decide what to do next.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Section: Privacy
+         ========================================================================== -->
+    <section id="privacy" class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">What is shared and what is not</h2>
+          <p class="section-body">
+            Banks exchange protocol messages, not transaction rows or graph structures. A match does reveal which entities two participants have in common, and session metadata is written to the audit ledger. These are the disclosure boundaries of the prototype. Outputs support analyst review and do not determine that a crime occurred.
+          </p>
+        </div>
+
+        <div class="privacy-split">
+          <div class="privacy-box">
+            <span class="privacy-box-label">Bank-local data</span>
+            <h3 class="privacy-box-title">Remains inside each bank</h3>
+            <ul class="privacy-items">
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Raw customer account records, transaction rows, and timestamps</span>
+              </li>
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Full local transaction graphs and subgraphs</span>
+              </li>
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Unmatched candidate entities and non-flagged accounts</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="privacy-box">
+            <span class="privacy-box-label">Exchanged or logged</span>
+            <h3 class="privacy-box-title">Observable session telemetry</h3>
+            <ul class="privacy-items">
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+                <span>Serialized cryptographic protocol messages (ServerSetup, Request, Response)</span>
+              </li>
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+                <span>Matching token identifiers revealed to the participating pair</span>
+              </li>
+              <li class="privacy-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+                <span>Session identifiers, message byte counts, and execution timings in the audit ledger</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Section: Architecture
+         ========================================================================== -->
+    <section id="architecture" class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Architecture</h2>
+          <p class="section-body">
+            Graph analysis and detection run inside each bank's own worker process. A coordinator relays serialized PSI messages and logs session metadata. It does not receive transaction rows or local graphs.
+          </p>
+        </div>
+
+        <div class="arch-card">
+          <div class="arch-svg-container">
+            <svg class="arch-svg" viewBox="0 0 840 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SignalMesh System Architecture Diagram">
+              <!-- Coordinator Box -->
+              <rect x="270" y="24" width="300" height="130" rx="12" fill="#14141c" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2"/>
+              <text x="420" y="54" font-family="var(--font-family)" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">Central Collaboration Service</text>
+              <text x="420" y="74" font-family="var(--font-family)" font-size="11" fill="#A78BFA" text-anchor="middle">Message Router & Session Coordinator</text>
+
+              <rect x="295" y="90" width="250" height="48" rx="6" fill="#0c0c10" stroke="rgba(255, 255, 255, 0.08)"/>
+              <text x="420" y="112" font-family="var(--font-family)" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">Privacy Leakage Ledger</text>
+              <text x="420" y="128" font-family="var(--font-family)" font-size="9.5" fill="#7A7886" text-anchor="middle">SHA-256 Hash Chaining · Session Telemetry</text>
+
+              <!-- Relaying Lines -->
+              <path d="M 345 154 L 170 240" stroke="#8B5CF6" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.75"/>
+              <path d="M 420 154 L 420 240" stroke="#8B5CF6" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.75"/>
+              <path d="M 495 154 L 670 240" stroke="#8B5CF6" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.75"/>
+
+              <!-- Direct Pairwise Collaboration Linkages -->
+              <path d="M 235 295 L 345 295" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.6" stroke-dasharray="3 3"/>
+              <path d="M 495 295 L 605 295" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.6" stroke-dasharray="3 3"/>
+              <path d="M 170 355 C 170 385, 670 385, 670 355" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1.2" stroke-dasharray="4 4" fill="none"/>
+
+              <rect x="272" y="284" width="46" height="20" rx="10" fill="#181822" stroke="rgba(139, 92, 246, 0.3)"/>
+              <text x="295" y="298" font-family="var(--font-family)" font-size="9" font-weight="600" fill="#A78BFA" text-anchor="middle">A ↔ B</text>
+
+              <rect x="532" y="284" width="46" height="20" rx="10" fill="#181822" stroke="rgba(139, 92, 246, 0.3)"/>
+              <text x="555" y="298" font-family="var(--font-family)" font-size="9" font-weight="600" fill="#A78BFA" text-anchor="middle">B ↔ C</text>
+
+              <rect x="397" y="365" width="46" height="20" rx="10" fill="#181822" stroke="rgba(139, 92, 246, 0.3)"/>
+              <text x="420" y="379" font-family="var(--font-family)" font-size="9" font-weight="600" fill="#A78BFA" text-anchor="middle">A ↔ C</text>
+
+              <!-- Bank A -->
+              <g transform="translate(105, 240)">
+                <rect width="130" height="115" rx="10" fill="#121217" stroke="rgba(255, 255, 255, 0.09)"/>
+                <rect x="10" y="10" width="110" height="24" rx="5" fill="#181822"/>
+                <text x="65" y="26" font-family="var(--font-family)" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank A Process</text>
+                <text x="65" y="52" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Transaction Records</text>
+                <text x="65" y="70" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Graph Analysis</text>
+                <rect x="15" y="86" width="100" height="18" rx="9" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text x="65" y="99" font-family="var(--font-family)" font-size="8.5" font-weight="600" fill="#FFFFFF" text-anchor="middle">Flagged Tokens</text>
+              </g>
+
+              <!-- Bank B -->
+              <g transform="translate(355, 240)">
+                <rect width="130" height="115" rx="10" fill="#121217" stroke="rgba(255, 255, 255, 0.09)"/>
+                <rect x="10" y="10" width="110" height="24" rx="5" fill="#181822"/>
+                <text x="65" y="26" font-family="var(--font-family)" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank B Process</text>
+                <text x="65" y="52" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Transaction Records</text>
+                <text x="65" y="70" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Graph Analysis</text>
+                <rect x="15" y="86" width="100" height="18" rx="9" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text x="65" y="99" font-family="var(--font-family)" font-size="8.5" font-weight="600" fill="#FFFFFF" text-anchor="middle">Flagged Tokens</text>
+              </g>
+
+              <!-- Bank C -->
+              <g transform="translate(605, 240)">
+                <rect width="130" height="115" rx="10" fill="#121217" stroke="rgba(255, 255, 255, 0.09)"/>
+                <rect x="10" y="10" width="110" height="24" rx="5" fill="#181822"/>
+                <text x="65" y="26" font-family="var(--font-family)" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank C Process</text>
+                <text x="65" y="52" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Transaction Records</text>
+                <text x="65" y="70" font-family="var(--font-family)" font-size="9" fill="#92909E" text-anchor="middle">Local Graph Analysis</text>
+                <rect x="15" y="86" width="100" height="18" rx="9" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text x="65" y="99" font-family="var(--font-family)" font-size="8.5" font-weight="600" fill="#FFFFFF" text-anchor="middle">Flagged Tokens</text>
+              </g>
+            </svg>
+          </div>
+
+          <p class="arch-caption">
+            Illustrative architecture of the current prototype. Lines represent local IPC-based test orchestration, not deployed internet connections.
+          </p>
+
+          <div class="tech-stack-row">
+            <span style="font-size: 11px; color: var(--text-subtle);">Technical stack:</span>
+            <span class="tech-pill">Python 3.11</span>
+            <span class="tech-pill">OpenMined PSI 2.0.6</span>
+            <span class="tech-pill">NetworkX</span>
+            <span class="tech-pill">SQLite Audit Ledger</span>
+            <span class="tech-pill">Multiprocessing IPC</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Section: Prototype Scope
+         ========================================================================== -->
+    <section id="prototype-scope" class="section">
+      <div class="container">
+        <!-- Also support #status anchor for backward compatibility -->
+        <div id="status" style="position: relative; top: -84px;"></div>
+
+        <div class="scope-card">
+          <span class="scope-label">Research prototype</span>
+          <h2 class="section-title" style="font-size: 1.8rem; margin-bottom: 4px;">Prototype scope</h2>
+          <p class="scope-text">
+            SignalMesh is currently demonstrated with synthetic datasets and separate local processes on one development machine. Network transport between institutions, TLS/mutual authentication, independent institutional deployment, external anchoring of the audit chain, and IBM LinuxONE compatibility are not yet implemented or verified.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Closing CTA Section
+         ========================================================================== -->
+    <section class="section" style="border-top: none; padding-top: 0;">
+      <div class="container">
+        <div class="closing-card">
+          <h2 class="closing-title">See the prototype workspace</h2>
+          <p class="closing-text">
+            Walk through local risk indicators, pairwise PSI sessions, investigation leads, and the audit history.
+          </p>
+          <div class="closing-actions">
+            <a href="index.html" class="btn btn-primary">
+              Open the demo workspace
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================================================
+       Footer Component
+       ========================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand-wrap">
+          <div class="brand">
+            <div class="brand-mark">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                <path d="M2 12h20"/>
+              </svg>
+            </div>
+            <span class="brand-name">SignalMesh</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-subtle); line-height: 1.5;">
+            Privacy-preserving AML collaboration
+          </p>
+        </div>
+
+        <ul class="footer-links" aria-label="Footer Navigation">
+          <li><a href="#platform" class="footer-link">Platform</a></li>
+          <li><a href="#how-it-works" class="footer-link">How it works</a></li>
+          <li><a href="#privacy" class="footer-link">Privacy</a></li>
+          <li><a href="#architecture" class="footer-link">Architecture</a></li>
+          <li><a href="#prototype-scope" class="footer-link">Prototype scope</a></li>
+          <li><a href="index.html" class="footer-link" style="color: var(--violet-muted); font-weight: 600;">Open demo workspace &rarr;</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          SignalMesh Research Prototype
+        </div>
+        <div>
+          Synthetic demonstration environment. A matched entity is an investigative lead, not a determination of wrongdoing.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       Inline JavaScript
+       ========================================================================== -->
+  <script>
+    // Header Scroll State
+    const siteHeader = document.getElementById('siteHeader');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 24) {
+        siteHeader.classList.add('scrolled');
+      } else {
+        siteHeader.classList.remove('scrolled');
+      }
+    }, { passive: true });
+
+    // Video Fallback & Reduced Motion Handling
+    const heroVideo = document.getElementById('heroVideo');
+    const heroPoster = document.getElementById('heroPoster');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function checkVideoPlayback() {
+      if (prefersReducedMotion.matches) {
+        if (heroVideo) heroVideo.style.display = 'none';
+        if (heroPoster) heroPoster.style.display = 'block';
+        return;
+      }
+
+      if (heroVideo) {
+        const playPromise = heroVideo.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            heroVideo.style.display = 'none';
+            if (heroPoster) heroPoster.style.display = 'block';
+          });
+        }
+      }
+    }
+
+    // Mobile Navigation Controls
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+
+    function toggleMobileNav() {
+      const isOpen = mobileNavDrawer.classList.contains('open');
+      if (isOpen) {
+        closeMobileNav();
+      } else {
+        mobileNavDrawer.classList.add('open');
+        mobileMenuBtn.setAttribute('aria-expanded', 'true');
+        mobileNavDrawer.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function closeMobileNav() {
+      if (mobileNavDrawer) {
+        mobileNavDrawer.classList.remove('open');
+        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        mobileNavDrawer.setAttribute('aria-hidden', 'true');
+        mobileMenuBtn.focus();
+      }
+    }
+
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', toggleMobileNav);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileNavDrawer.classList.contains('open')) {
+        closeMobileNav();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (mobileNavDrawer.classList.contains('open') &&
+          !mobileNavDrawer.contains(e.target) &&
+          !mobileMenuBtn.contains(e.target)) {
+        closeMobileNav();
+      }
+    });
+
+    // Cleanup Animation Classes
+    window.addEventListener('DOMContentLoaded', () => {
+      checkVideoPlayback();
+      setTimeout(() => {
+        document.querySelectorAll('.animate-in').forEach(el => {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+      }, 1200);
+    });
+
+    prefersReducedMotion.addEventListener('change', checkVideoPlayback);
+  </script>
+</body>
+</html>

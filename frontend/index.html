@@ -1,0 +1,3578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalMesh — Privacy-Preserving Cross-Bank AML Investigation</title>
+  <meta name="description" content="Institutional AML investigation dashboard using Private Set Intersection (PSI) for privacy-preserving entity overlap discovery across simulated financial institutions.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans with robust system fallbacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       SignalMesh Design System & Institutional Dark-Fintech Theme
+       Reference: Sellix-inspired dark canvas, white type, rounded pill controls,
+       subtle glass surfaces, and violet dot-matrix motif.
+       ========================================================================== */
+    :root {
+      /* Canvas & Surfaces */
+      --bg-base: #070709;
+      --bg-canvas: #0a0a0e;
+      --bg-card: #111116;
+      --bg-card-subtle: #16161d;
+      --bg-card-elevated: #1a1a23;
+      --bg-glass: rgba(18, 18, 24, 0.75);
+      --bg-glass-high: rgba(26, 26, 35, 0.85);
+
+      /* Borders */
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-focus: #8B5CF6;
+      --border-accent: rgba(139, 92, 246, 0.35);
+
+      /* Typography Colors */
+      --text-primary: #FFFFFF;
+      --text-secondary: #BDBDC7;
+      --text-muted: #858591;
+      --text-dim: #5c5c68;
+
+      /* Accents & Status (Restrained, Institutional) */
+      --violet-primary: #8B5CF6;
+      --violet-light: #A78BFA;
+      --violet-dark: #6D28D9;
+      --violet-glow: rgba(139, 92, 246, 0.15);
+      --violet-surface: rgba(139, 92, 246, 0.12);
+
+      --status-success: #10B981;
+      --status-success-bg: rgba(16, 185, 129, 0.12);
+      --status-success-text: #34D399;
+
+      --status-warning: #F59E0B;
+      --status-warning-bg: rgba(245, 158, 11, 0.12);
+      --status-warning-text: #FBBF24;
+
+      --status-danger: #EF4444;
+      --status-danger-bg: rgba(239, 68, 68, 0.12);
+      --status-danger-text: #F87171;
+
+      --status-info: #3B82F6;
+      --status-info-bg: rgba(59, 130, 246, 0.12);
+      --status-info-text: #60A5FA;
+
+      /* Dimensions & Layout Tokens */
+      --sidebar-width: 244px;
+      --header-height: 72px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-pill: 9999px;
+
+      /* Transitions */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+      
+      /* Typography */
+      --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Reset & Base Styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* Accessible Focus Styles */
+    :focus-visible {
+      outline: 2px solid var(--violet-primary);
+      outline-offset: 2px;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Layout Shell */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       Sidebar Component
+       ========================================================================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background-color: var(--bg-card);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100;
+      transition: transform var(--transition-normal);
+    }
+
+    .sidebar-header {
+      height: var(--header-height);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 30% 30%, #A78BFA, #6D28D9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--violet-glow);
+    }
+
+    .brand-text-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .brand-badge {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--violet-light);
+      margin-top: 3px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid transparent;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-item.active {
+      color: #FFFFFF;
+      background: var(--violet-surface);
+      border-color: var(--border-accent);
+      font-weight: 600;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      width: 4px;
+      height: 16px;
+      background-color: var(--violet-primary);
+      border-radius: var(--radius-pill);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      stroke-width: 1.8;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Mode Mini-Card in Sidebar */
+    .source-mini-card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .source-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .source-pill {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .source-pill.demo {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--violet-light);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .source-pill.api {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .source-pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    .mode-switch-btn {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      width: 100%;
+      text-align: center;
+    }
+
+    .mode-switch-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+      border-color: var(--border-medium);
+    }
+
+    .sidebar-footer-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ==========================================================================
+       Main Application Shell & Top Header
+       ========================================================================== */
+    .app-main {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background-color: var(--bg-base);
+      min-height: 100vh;
+    }
+
+    .app-header {
+      height: var(--header-height);
+      padding: 0 32px;
+      background: rgba(10, 10, 14, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      gap: 20px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .header-page-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-page-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Search Input Control */
+    .search-box {
+      position: relative;
+      width: 260px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      padding: 0 32px 0 34px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      transition: all var(--transition-fast);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-input:focus {
+      border-color: var(--violet-primary);
+      box-shadow: 0 0 0 2px var(--violet-glow);
+      background: var(--bg-card-elevated);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      padding: 2px;
+    }
+    .search-input:not(:placeholder-shown) + .search-clear {
+      display: block;
+    }
+
+    /* Environment Chip in Header */
+    .env-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      user-select: none;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+    }
+
+    .env-chip.demo {
+      background: rgba(139, 92, 246, 0.12);
+      color: var(--violet-light);
+      border-color: rgba(139, 92, 246, 0.25);
+    }
+
+    .env-chip.demo:hover {
+      background: rgba(139, 92, 246, 0.22);
+      border-color: var(--violet-primary);
+    }
+
+    .env-chip.api {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .env-chip.api:hover {
+      background: rgba(16, 185, 129, 0.22);
+    }
+
+    /* Profile Demo Control */
+    .profile-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 12px 4px 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      cursor: default;
+    }
+
+    .profile-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #272732;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+    }
+
+    .profile-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .profile-name {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .profile-role {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       Content Container & Grid Layouts
+       ========================================================================== */
+    .content-container {
+      padding: 28px 32px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Page Header Area inside view */
+    .view-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .view-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 680px;
+    }
+
+    .view-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .view-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .view-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Buttons (Pill styling adhering to Sellix fintech aesthetic) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-decoration: none;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background-color: #FFFFFF;
+      color: #09090B;
+      border-color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background-color: #ECECEE;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      border-color: var(--border-medium);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* ==========================================================================
+       Metric Cards (4 Compact Cards)
+       ========================================================================== */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      transition: all var(--transition-fast);
+    }
+
+    .metric-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: var(--bg-card-subtle);
+    }
+
+    .metric-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-icon-wrap {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--violet-light);
+    }
+
+    .metric-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .metric-context {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       Network Panel & Canvas/SVG Topology
+       ========================================================================== */
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .panel-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    .panel-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Cross-Bank Network SVG Component */
+    .network-container {
+      width: 100%;
+      height: 340px;
+      position: relative;
+      background: radial-gradient(circle at center, rgba(139, 92, 246, 0.06) 0%, rgba(10, 10, 14, 0.95) 75%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Dot-Matrix Globe Motif (Low opacity, decorative) */
+    .globe-backdrop {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      mix-blend-mode: screen;
+    }
+
+    .network-svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+
+    .network-legend {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-subtle);
+      align-self: center;
+      margin-top: -6px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .legend-line {
+      width: 16px;
+      height: 2px;
+      background: var(--violet-primary);
+    }
+
+    /* Node Badge inside SVG */
+    .node-status-text {
+      font-size: 10px;
+      font-weight: 600;
+      fill: var(--text-secondary);
+    }
+
+    /* ==========================================================================
+       Data Tables & Filter Bars
+       ========================================================================== */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      background: var(--bg-card);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .data-table th {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      vertical-align: middle;
+      transition: background-color var(--transition-fast);
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover td {
+      background-color: rgba(255, 255, 255, 0.025);
+    }
+
+    /* Badges & Tags */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    .badge-high {
+      background: var(--status-danger-bg);
+      color: var(--status-danger-text);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .badge-medium {
+      background: var(--status-warning-bg);
+      color: var(--status-warning-text);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-low {
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-success {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-violet {
+      background: var(--violet-surface);
+      color: var(--violet-light);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .badge-neutral {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .token-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11.5px;
+      color: #E2E8F0;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px 7px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .token-copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      padding: 2px;
+      border-radius: 4px;
+    }
+    .token-copy-btn:hover {
+      color: var(--text-primary);
+    }
+
+    /* Filter Controls Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+    }
+
+    .filter-select {
+      height: 36px;
+      padding: 0 28px 0 12px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12.5px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23858591' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+
+    .filter-select:focus {
+      border-color: var(--violet-primary);
+    }
+
+    .filter-clear-btn {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      margin-left: auto;
+    }
+    .filter-clear-btn:hover {
+      color: var(--text-primary);
+      text-decoration: underline;
+    }
+
+    /* ==========================================================================
+       Data Minimization / Privacy Design Note Panel
+       ========================================================================== */
+    .privacy-notice-panel {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(17, 17, 22, 0.8) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .notice-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--violet-light);
+    }
+
+    .notice-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      list-style: none;
+    }
+
+    .notice-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .notice-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--violet-light);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       Right-Side Drawer / Modal for Lead Details
+       ========================================================================== */
+    .drawer-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-normal);
+    }
+
+    .drawer-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 520px;
+      max-width: 90vw;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-subtle);
+      z-index: 210;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform var(--transition-normal);
+      box-shadow: -12px 0 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .detail-drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .drawer-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .drawer-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .drawer-close-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+    }
+
+    .drawer-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .drawer-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .detail-card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+    }
+
+    .detail-row-label {
+      color: var(--text-muted);
+    }
+
+    .detail-row-value {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .legal-notice-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--status-warning-text);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.45;
+    }
+
+    .legal-notice-box svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Risk Score Gauge Meter */
+    .risk-meter {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .risk-meter-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+
+    .risk-meter-fill {
+      height: 100%;
+      border-radius: var(--radius-pill);
+      transition: width var(--transition-normal);
+    }
+
+    /* ==========================================================================
+       Rule Cards (Local Risk Signals View)
+       ========================================================================== */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .rule-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: all var(--transition-fast);
+    }
+
+    .rule-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: var(--bg-card-subtle);
+    }
+
+    .rule-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .rule-name-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .rule-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .rule-id {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 11px;
+      color: var(--violet-light);
+    }
+
+    .rule-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .rule-criteria-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 11px;
+      color: #CBD5E1;
+      line-height: 1.4;
+    }
+
+    /* Currency Completeness Card Special Styling */
+    .rule-card.warning-special {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.05) 0%, rgba(17, 17, 22, 1) 100%);
+    }
+
+    /* ==========================================================================
+       Bank Network Cards
+       ========================================================================== */
+    .banks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .bank-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .bank-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .bank-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bank-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--violet-light);
+    }
+
+    /* ==========================================================================
+       Loading, Error, & Empty States
+       ========================================================================== */
+    .state-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 14px;
+    }
+
+    .state-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .state-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .state-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-width: 420px;
+      line-height: 1.5;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(139, 92, 246, 0.2);
+      border-top-color: var(--violet-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification System */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: var(--bg-card-elevated);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 12px 18px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ==========================================================================
+       Responsive Media Queries
+       ========================================================================== */
+    @media (max-width: 1200px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+      .banks-grid {
+        grid-template-columns: 1fr;
+      }
+      .notice-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.8);
+      }
+      .app-main {
+        margin-left: 0;
+      }
+      .menu-toggle {
+        display: flex;
+      }
+      .app-header {
+        padding: 0 16px;
+      }
+      .content-container {
+        padding: 20px 16px 36px;
+      }
+      .search-box {
+        display: none; /* Collapsed on small screens */
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .view-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .view-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .detail-drawer {
+        width: 100vw;
+        max-width: 100vw;
+      }
+    }
+
+    /* Accessibility: Respect Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .globe-backdrop {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Layout Shell -->
+  <div class="app-layout">
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobileOverlay" class="drawer-backdrop" onclick="toggleMobileSidebar(false)"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="appSidebar" class="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a href="#overview" class="brand-group" onclick="navigate('overview')">
+          <div class="brand-icon">
+            <!-- Inline SVG Dot-Matrix Globe Motif Icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <div class="brand-text-wrap">
+            <span class="brand-name">SignalMesh</span>
+            <span class="brand-badge">AML COLLABORATION</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <button id="nav-overview" class="nav-item active" onclick="navigate('overview')" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          <span>Overview</span>
+        </button>
+
+        <button id="nav-leads" class="nav-item" onclick="navigate('leads')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Investigation Leads</span>
+        </button>
+
+        <button id="nav-network" class="nav-item" onclick="navigate('network')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+            <path d="M9 22v-4h6v4"/>
+            <path d="M8 6h.01"/>
+            <path d="M16 6h.01"/>
+            <path d="M12 6h.01"/>
+            <path d="M12 10h.01"/>
+            <path d="M12 14h.01"/>
+            <path d="M16 10h.01"/>
+            <path d="M16 14h.01"/>
+            <path d="M8 10h.01"/>
+            <path d="M8 14h.01"/>
+          </svg>
+          <span>Bank Network</span>
+        </button>
+
+        <button id="nav-ledger" class="nav-item" onclick="navigate('ledger')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span>Privacy Ledger</span>
+        </button>
+
+        <button id="nav-rules" class="nav-item" onclick="navigate('rules')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span>Local Risk Signals</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer with Mode Switcher Mini-Card -->
+      <div class="sidebar-footer">
+        <div class="source-mini-card">
+          <div class="source-header-row">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">ACTIVE SOURCE</span>
+            <span id="sidebarSourcePill" class="source-pill demo">
+              <span class="source-pulse"></span>
+              <span id="sidebarSourceText">SIMULATION</span>
+            </span>
+          </div>
+          <button class="mode-switch-btn" onclick="toggleDataMode()">
+            Switch to <span id="sidebarToggleTarget">API Mode</span>
+          </button>
+        </div>
+        <div class="sidebar-footer-text">
+          Privacy-first collaboration
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+
+      <!-- Top Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="menu-toggle" onclick="toggleMobileSidebar(true)" aria-label="Open Navigation Menu" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" x2="20" y1="12" y2="12"/>
+              <line x1="4" x2="20" y1="6" y2="6"/>
+              <line x1="4" x2="20" y1="18" y2="18"/>
+            </svg>
+          </button>
+          <div class="header-titles">
+            <h1 id="headerTitle" class="header-page-title">Overview</h1>
+            <p id="headerSubtitle" class="header-page-subtitle">Cross-bank signals without pooling raw transaction data.</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Live Global Search -->
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" x2="16.65" y1="21" y2="16.65"/>
+            </svg>
+            <input type="text" id="globalSearchInput" class="search-input" placeholder="Search tokens, leads, rules..." oninput="handleGlobalSearch(this.value)">
+            <button class="search-clear" onclick="clearSearch()" aria-label="Clear search">&times;</button>
+          </div>
+
+          <!-- Environment Chip (Clickable Toggle) -->
+          <div id="envChip" class="env-chip demo" onclick="toggleDataMode()" title="Click to toggle between Demo and API mode">
+            <span class="badge-dot"></span>
+            <span id="envChipText">DEMO ENVIRONMENT</span>
+          </div>
+
+          <!-- Compliance Analyst Profile -->
+          <div class="profile-pill">
+            <div class="profile-avatar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="profile-meta">
+              <span class="profile-name">Compliance Analyst</span>
+              <span class="profile-role">Bank Oversight</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic View Container -->
+      <div id="viewContainer" class="content-container">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Lead Detail Right-Side Drawer Modal -->
+  <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeLeadDrawer()"></div>
+  <aside id="leadDrawer" class="detail-drawer" aria-labelledby="drawerLeadTitle" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-title-wrap">
+        <h2 id="drawerLeadTitle" class="drawer-title">Investigation Lead Details</h2>
+        <span id="drawerLeadSub" style="font-size: 12px; color: var(--text-muted);">Decentralized graph intelligence</span>
+      </div>
+      <button class="drawer-close-btn" onclick="closeLeadDrawer()" aria-label="Close details">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" x2="6" y1="6" y2="18"/>
+          <line x1="6" x2="18" y1="6" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="drawerContent" class="drawer-body">
+      <!-- Injected dynamically by showLeadDetails() -->
+    </div>
+  </aside>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- ==========================================================================
+       SignalMesh Application Logic (Vanilla ES6)
+       ========================================================================== -->
+  <script>
+    /* ==========================================================================
+       1. Configuration & Mode Switcher
+       DATA_MODE: 'demo' (deterministic synthetic fixtures) | 'api' (real HTTP fetch)
+       ========================================================================== */
+    const CONFIG = {
+      DATA_MODE: 'demo', // Default to demo while backend endpoints are being finalized
+      API_BASE_URL: 'http://127.0.0.1:8000',
+      REQUEST_TIMEOUT_MS: 8000
+    };
+
+    let currentView = 'overview';
+    let globalSearchQuery = '';
+
+    /* ==========================================================================
+       2. Centralized DEMO_DATA Fixture Provider
+       Deterministic, realistic AML investigation data. Opaque tokens only.
+       ========================================================================== */
+    const DEMO_DATA = {
+      summaryMetrics: {
+        simulated_participants_count: 3,
+        simulated_participants_list: ["Bank A", "Bank B", "Bank C"],
+        pairwise_overlaps_count: 12,
+        open_investigation_leads_count: 7,
+        audit_chain_status: "Verified (demo)",
+        audit_chain_verified_events: 18,
+        last_activity_timestamp: "2026-10-18T12:45:00Z",
+        source_environment: "DEMO_ENVIRONMENT"
+      },
+
+      banks: [
+        {
+          bank_id: "BANK_A",
+          display_name: "Bank A (Simulated Agent)",
+          status: "ONLINE",
+          local_candidate_token_count: 18,
+          pairwise_sessions_completed: 8,
+          last_activity_timestamp: "2026-10-18T12:45:00Z",
+          local_rules_evaluated: ["RULE_STRUCTURING_SMURFING", "RULE_HIGH_FAN_IN", "RULE_HIGH_FAN_OUT", "RULE_RAPID_PASS_THROUGH"]
+        },
+        {
+          bank_id: "BANK_B",
+          display_name: "Bank B (Simulated Agent)",
+          status: "ONLINE",
+          local_candidate_token_count: 15,
+          pairwise_sessions_completed: 8,
+          last_activity_timestamp: "2026-10-18T12:42:00Z",
+          local_rules_evaluated: ["RULE_STRUCTURING_SMURFING", "RULE_RAPID_PASS_THROUGH"]
+        },
+        {
+          bank_id: "BANK_C",
+          display_name: "Bank C (Simulated Agent)",
+          status: "ONLINE",
+          local_candidate_token_count: 12,
+          pairwise_sessions_completed: 8,
+          last_activity_timestamp: "2026-10-18T12:40:00Z",
+          local_rules_evaluated: ["RULE_STRUCTURING_SMURFING", "RULE_HIGH_VALUE_CONDUIT", "RULE_INCOMPLETE_CURRENCY_COVERAGE"]
+        }
+      ],
+
+      pairwiseSessions: [
+        {
+          pair_id: "PAIR_A_B",
+          server_bank_id: "BANK_A",
+          client_bank_id: "BANK_B",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          total_serialized_protocol_bytes: 14528,
+          revealed_cardinality: 5,
+          status: "SUCCESS",
+          timestamp: "2026-10-18T12:30:15Z",
+          duration_ms: 142.5
+        },
+        {
+          pair_id: "PAIR_B_A",
+          server_bank_id: "BANK_B",
+          client_bank_id: "BANK_A",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          total_serialized_protocol_bytes: 14412,
+          revealed_cardinality: 5,
+          status: "SUCCESS",
+          timestamp: "2026-10-18T12:30:18Z",
+          duration_ms: 138.2
+        },
+        {
+          pair_id: "PAIR_A_C",
+          server_bank_id: "BANK_A",
+          client_bank_id: "BANK_C",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          total_serialized_protocol_bytes: 11280,
+          revealed_cardinality: 4,
+          status: "SUCCESS",
+          timestamp: "2026-10-18T12:35:04Z",
+          duration_ms: 121.8
+        },
+        {
+          pair_id: "PAIR_B_C",
+          server_bank_id: "BANK_B",
+          client_bank_id: "BANK_C",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          total_serialized_protocol_bytes: 9860,
+          revealed_cardinality: 3,
+          status: "SUCCESS",
+          timestamp: "2026-10-18T12:38:22Z",
+          duration_ms: 115.4
+        }
+      ],
+
+      investigationLeads: [
+        {
+          lead_id: "LEAD-2026-001",
+          canonical_token: "TOK_0a91c73f81b2d604",
+          matched_banks: ["Bank A", "Bank B"],
+          triggered_rules: ["RULE_STRUCTURING_SMURFING", "RULE_HIGH_FAN_IN"],
+          rule_explanations: [
+            "Observed 3 cash deposits near reporting threshold totaling $28,800.00.",
+            "Fan-in aggregation from 4 distinct source counterparties with in/out ratio of 3.2."
+          ],
+          priority: "HIGH",
+          status: "OPEN",
+          local_risk_score: 0.85,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 28800.0,
+            total_out_amount: 4200.0,
+            turnover_ratio: 0.15,
+            structuring_count: 3,
+            in_degree: 4,
+            out_degree: 1,
+            rapid_pass_through_hours: null,
+            kyc_risk_score: 0.35
+          },
+          updated_at: "2026-10-18T12:35:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-002",
+          canonical_token: "TOK_b74e1d9f82c301a5",
+          matched_banks: ["Bank B", "Bank C"],
+          triggered_rules: ["RULE_RAPID_PASS_THROUGH"],
+          rule_explanations: [
+            "Rapid funds disbursement within 4.2 hours of receipt with turnover ratio of 0.96."
+          ],
+          priority: "HIGH",
+          status: "OPEN",
+          local_risk_score: 0.75,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 45000.0,
+            total_out_amount: 43200.0,
+            turnover_ratio: 0.96,
+            structuring_count: 0,
+            in_degree: 1,
+            out_degree: 2,
+            rapid_pass_through_hours: 4.2,
+            kyc_risk_score: 0.20
+          },
+          updated_at: "2026-10-18T12:40:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-003",
+          canonical_token: "TOK_c3d82a1e94f05b72",
+          matched_banks: ["Bank A", "Bank B"],
+          triggered_rules: ["RULE_HIGH_VALUE_CONDUIT"],
+          rule_explanations: [
+            "Single transaction value of $68,500.00 exceeds threshold ($40,000.00)."
+          ],
+          priority: "MEDIUM",
+          status: "IN_REVIEW",
+          local_risk_score: 0.65,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 68500.0,
+            total_out_amount: 65000.0,
+            turnover_ratio: 0.95,
+            structuring_count: 0,
+            in_degree: 1,
+            out_degree: 1,
+            rapid_pass_through_hours: 18.5,
+            kyc_risk_score: 0.25
+          },
+          updated_at: "2026-10-18T11:50:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-004",
+          canonical_token: "TOK_e5f812d4a7b03c99",
+          matched_banks: ["Bank A", "Bank C"],
+          triggered_rules: ["RULE_HIGH_FAN_OUT", "RULE_INCOMPLETE_CURRENCY_COVERAGE"],
+          rule_explanations: [
+            "Fan-out dispersion to 5 distinct beneficiary counterparties with out/in ratio of 2.8.",
+            "AUDIT WARNING: Financial totals reflect partial activity. Excluded 2 transactions in unmapped currencies: GBP, EUR."
+          ],
+          priority: "MEDIUM",
+          status: "OPEN",
+          local_risk_score: 0.55,
+          currency_coverage_complete: false,
+          excluded_currencies: ["GBP", "EUR"],
+          excluded_currency_tx_count: 2,
+          coverage_warning: "Excluded 2 transactions in unmapped currencies: GBP, EUR.",
+          supporting_evidence: {
+            total_in_amount: 12000.0,
+            total_out_amount: 33600.0,
+            turnover_ratio: 2.8,
+            structuring_count: 0,
+            in_degree: 1,
+            out_degree: 5,
+            currency_coverage_complete: false,
+            excluded_currencies: ["GBP", "EUR"],
+            excluded_currency_tx_count: 2
+          },
+          updated_at: "2026-10-18T11:15:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-005",
+          canonical_token: "TOK_88a29cf01e473d11",
+          matched_banks: ["Bank A", "Bank B", "Bank C"],
+          triggered_rules: ["RULE_STRUCTURING_SMURFING", "RULE_HIGH_FAN_IN", "RULE_HIGH_FAN_OUT"],
+          rule_explanations: [
+            "Observed 4 transactions near reporting threshold totaling $38,500.00.",
+            "Complex aggregation and dispersion routing across 3 participating banks."
+          ],
+          priority: "HIGH",
+          status: "ESCALATED",
+          local_risk_score: 0.95,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 52000.0,
+            total_out_amount: 51200.0,
+            turnover_ratio: 0.98,
+            structuring_count: 4,
+            in_degree: 6,
+            out_degree: 4,
+            rapid_pass_through_hours: 6.8,
+            kyc_risk_score: 0.60
+          },
+          updated_at: "2026-10-18T10:30:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-006",
+          canonical_token: "TOK_91b73e5f2a084c81",
+          matched_banks: ["Bank B", "Bank C"],
+          triggered_rules: ["RULE_RAPID_PASS_THROUGH"],
+          rule_explanations: [
+            "Rapid funds disbursement within 12.0 hours with turnover ratio of 1.02."
+          ],
+          priority: "LOW",
+          status: "RESOLVED",
+          local_risk_score: 0.45,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 14000.0,
+            total_out_amount: 14280.0,
+            turnover_ratio: 1.02,
+            structuring_count: 0,
+            in_degree: 1,
+            out_degree: 1,
+            rapid_pass_through_hours: 12.0,
+            kyc_risk_score: 0.10
+          },
+          updated_at: "2026-10-17T18:00:00Z"
+        },
+        {
+          lead_id: "LEAD-2026-007",
+          canonical_token: "TOK_fa309c81e27d4b65",
+          matched_banks: ["Bank A", "Bank C"],
+          triggered_rules: ["RULE_STRUCTURING_SMURFING"],
+          rule_explanations: [
+            "Observed 2 deposits near threshold totaling $19,400.00."
+          ],
+          priority: "MEDIUM",
+          status: "OPEN",
+          local_risk_score: 0.58,
+          currency_coverage_complete: true,
+          supporting_evidence: {
+            total_in_amount: 19400.0,
+            total_out_amount: 2100.0,
+            turnover_ratio: 0.11,
+            structuring_count: 2,
+            in_degree: 2,
+            out_degree: 1,
+            rapid_pass_through_hours: null,
+            kyc_risk_score: 0.30
+          },
+          updated_at: "2026-10-18T09:45:00Z"
+        }
+      ],
+
+      ledgerEvents: [
+        {
+          sequence_number: 1,
+          event_id: "EVT_000001",
+          session_id: "SESS_20261018_A_B_01",
+          round_id: "RND_20261018_01",
+          server_bank_id: "BANK_A",
+          client_bank_id: "BANK_B",
+          protocol_family: "ECDH_OPRF_PSI",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          server_set_size: 18,
+          client_set_size: 15,
+          total_serialized_protocol_bytes: 14528,
+          client_revealed_cardinality: 5,
+          status: "SUCCESS",
+          prev_hash: "GENESIS",
+          event_hash: "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+          timestamp: "2026-10-18T12:30:15Z",
+          execution_time_ms: 142.5
+        },
+        {
+          sequence_number: 2,
+          event_id: "EVT_000002",
+          session_id: "SESS_20261018_B_A_01",
+          round_id: "RND_20261018_01",
+          server_bank_id: "BANK_B",
+          client_bank_id: "BANK_A",
+          protocol_family: "ECDH_OPRF_PSI",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          server_set_size: 15,
+          client_set_size: 18,
+          total_serialized_protocol_bytes: 14412,
+          client_revealed_cardinality: 5,
+          status: "SUCCESS",
+          prev_hash: "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+          event_hash: "4f5e6d7c8b9a0123456789abcdef0123456789abcdef0123456789abcdef0123",
+          timestamp: "2026-10-18T12:30:18Z",
+          execution_time_ms: 138.2
+        },
+        {
+          sequence_number: 3,
+          event_id: "EVT_000003",
+          session_id: "SESS_20261018_A_B_01",
+          round_id: "RND_20261018_01",
+          server_bank_id: "BANK_A",
+          client_bank_id: "BANK_B",
+          protocol_family: "ECDH_OPRF_PSI",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          server_set_size: 18,
+          client_set_size: 15,
+          total_serialized_protocol_bytes: 0,
+          client_revealed_cardinality: 0,
+          status: "REJECTED_DUPLICATE",
+          prev_hash: "4f5e6d7c8b9a0123456789abcdef0123456789abcdef0123456789abcdef0123",
+          event_hash: "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+          timestamp: "2026-10-18T12:32:00Z",
+          execution_time_ms: 0.4,
+          error_message: "Duplicate session ID detected: SESS_20261018_A_B_01"
+        },
+        {
+          sequence_number: 4,
+          event_id: "EVT_000004",
+          session_id: "SESS_20261018_A_C_01",
+          round_id: "RND_20261018_02",
+          server_bank_id: "BANK_A",
+          client_bank_id: "BANK_C",
+          protocol_family: "ECDH_OPRF_PSI",
+          data_structure: "RAW",
+          fpr_parameter: 0.001,
+          server_set_size: 18,
+          client_set_size: 12,
+          total_serialized_protocol_bytes: 11280,
+          client_revealed_cardinality: 4,
+          status: "SUCCESS",
+          prev_hash: "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+          event_hash: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+          timestamp: "2026-10-18T12:35:04Z",
+          execution_time_ms: 121.8
+        }
+      ],
+
+      ledgerVerification: {
+        is_valid: true,
+        total_events_checked: 18,
+        last_verified_sequence: 18,
+        chain_head_hash: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+        verification_timestamp: "2026-10-18T12:45:00Z",
+        checkpoint_status: "NOT_CONFIGURED",
+        threat_boundary_note: "Local hash chaining detects modification/reordering/deletion. Tail truncation requires an independently retained checkpoint. Privileged database administrator write access is outside the local threat boundary."
+      },
+
+      ruleDefinitions: [
+        {
+          rule_id: "RULE_STRUCTURING_SMURFING",
+          name: "Structuring / Smurfing",
+          category: "TYPOLOGY",
+          description: "Multiple deposits structured just below currency transaction reporting (CTR) thresholds ($10,000).",
+          risk_weight: 0.40,
+          criteria: "structuring_count >= 2 OR (cash_deposit_count >= 2 AND total_in_amount >= $15,000)",
+          sample_evidence_keys: ["structuring_count", "cash_deposit_count", "cash_deposit_amount", "total_in_amount"],
+          is_data_completeness_warning: false
+        },
+        {
+          rule_id: "RULE_RAPID_PASS_THROUGH",
+          name: "Rapid Pass-Through Layering",
+          category: "TYPOLOGY",
+          description: "Funds rapidly disbursed within 24 hours of receipt with turnover ratio near 1.0 (85% to 115%).",
+          risk_weight: 0.35,
+          criteria: "rapid_pass_through_hours <= 24.0 AND 0.85 <= turnover_ratio <= 1.15 AND total_out_amount >= $10,000",
+          sample_evidence_keys: ["rapid_pass_through_hours", "turnover_ratio", "total_out_amount"],
+          is_data_completeness_warning: false
+        },
+        {
+          rule_id: "RULE_HIGH_FAN_IN",
+          name: "High Fan-In Aggregation",
+          category: "TYPOLOGY",
+          description: "Multiple distinct counterparties funnel funds into a single destination account.",
+          risk_weight: 0.35,
+          criteria: "in_degree >= 2 AND fan_in_ratio >= 1.5 AND total_in_amount >= $15,000",
+          sample_evidence_keys: ["in_degree", "fan_in_ratio", "total_in_amount"],
+          is_data_completeness_warning: false
+        },
+        {
+          rule_id: "RULE_HIGH_FAN_OUT",
+          name: "High Fan-Out Dispersion",
+          category: "TYPOLOGY",
+          description: "A single account rapidly disperses funds out to multiple distinct beneficiary counterparties.",
+          risk_weight: 0.35,
+          criteria: "out_degree >= 2 AND fan_out_ratio >= 1.5 AND total_out_amount >= $15,000",
+          sample_evidence_keys: ["out_degree", "fan_out_ratio", "total_out_amount"],
+          is_data_completeness_warning: false
+        },
+        {
+          rule_id: "RULE_HIGH_VALUE_CONDUIT",
+          name: "High-Value Conduit",
+          category: "TYPOLOGY",
+          description: "Single transaction value exceeding the high-value monitoring threshold ($40,000).",
+          risk_weight: 0.30,
+          criteria: "max_in_amount >= $40,000 OR max_out_amount >= $40,000",
+          sample_evidence_keys: ["max_in_amount", "max_out_amount"],
+          is_data_completeness_warning: false
+        },
+        {
+          rule_id: "RULE_INCOMPLETE_CURRENCY_COVERAGE",
+          name: "Incomplete Currency Coverage Warning",
+          category: "DATA_COMPLETENESS",
+          description: "Missing foreign-currency exchange rates prevent full conversion. Treated strictly as a data-completeness warning with 0.00 risk score inflation.",
+          risk_weight: 0.00,
+          criteria: "currency_coverage_complete == False",
+          sample_evidence_keys: ["excluded_currencies", "excluded_currency_tx_count", "coverage_warning"],
+          is_data_completeness_warning: true
+        }
+      ]
+    };
+
+    /* ==========================================================================
+       3. Provider Interface & Implementations
+       DemoDataProvider & ApiDataProvider share identical signatures.
+       ========================================================================== */
+    class DemoDataProvider {
+      async getDashboardSummary() {
+        return Promise.resolve({ ...DEMO_DATA.summaryMetrics });
+      }
+
+      async getBanks() {
+        return Promise.resolve([...DEMO_DATA.banks]);
+      }
+
+      async getPairwiseSessions() {
+        return Promise.resolve([...DEMO_DATA.pairwiseSessions]);
+      }
+
+      async getInvestigationLeads(filters = {}) {
+        let leads = [...DEMO_DATA.investigationLeads];
+        if (filters.search) {
+          const q = filters.search.toLowerCase();
+          leads = leads.filter(l => 
+            l.canonical_token.toLowerCase().includes(q) ||
+            l.lead_id.toLowerCase().includes(q) ||
+            l.matched_banks.some(b => b.toLowerCase().includes(q)) ||
+            l.triggered_rules.some(r => r.toLowerCase().includes(q))
+          );
+        }
+        if (filters.status && filters.status !== 'ALL') {
+          leads = leads.filter(l => l.status === filters.status);
+        }
+        if (filters.priority && filters.priority !== 'ALL') {
+          leads = leads.filter(l => l.priority === filters.priority);
+        }
+        if (filters.bank && filters.bank !== 'ALL') {
+          leads = leads.filter(l => l.matched_banks.includes(filters.bank));
+        }
+        if (filters.rule && filters.rule !== 'ALL') {
+          leads = leads.filter(l => l.triggered_rules.includes(filters.rule));
+        }
+        return Promise.resolve(leads);
+      }
+
+      async getInvestigationLead(leadId) {
+        const lead = DEMO_DATA.investigationLeads.find(l => l.lead_id === leadId);
+        return Promise.resolve(lead ? { ...lead } : null);
+      }
+
+      async getLedgerEvents(filters = {}) {
+        let events = [...DEMO_DATA.ledgerEvents];
+        if (filters.status && filters.status !== 'ALL') {
+          events = events.filter(e => e.status === filters.status);
+        }
+        if (filters.data_structure && filters.data_structure !== 'ALL') {
+          events = events.filter(e => e.data_structure === filters.data_structure);
+        }
+        return Promise.resolve(events);
+      }
+
+      async getLedgerVerification() {
+        return Promise.resolve({ ...DEMO_DATA.ledgerVerification });
+      }
+
+      async getRuleDefinitions() {
+        return Promise.resolve([...DEMO_DATA.ruleDefinitions]);
+      }
+    }
+
+    class ApiDataProvider {
+      constructor(baseUrl, timeoutMs) {
+        this.baseUrl = baseUrl;
+        this.timeoutMs = timeoutMs;
+      }
+
+      async _fetchJson(endpoint, options = {}) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+        const url = `${this.baseUrl}${endpoint}`;
+
+        try {
+          const resp = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              ...(options.headers || {})
+            }
+          });
+          clearTimeout(timer);
+
+          if (!resp.ok) {
+            throw new Error(`API Error [${resp.status}]: ${resp.statusText} for ${endpoint}`);
+          }
+          return await resp.json();
+        } catch (err) {
+          clearTimeout(timer);
+          if (err.name === 'AbortError') {
+            throw new Error(`Connection timed out after ${this.timeoutMs}ms while contacting ${endpoint}`);
+          }
+          throw err;
+        }
+      }
+
+      async getDashboardSummary() {
+        return this._fetchJson('/api/v1/dashboard/summary');
+      }
+
+      async getBanks() {
+        return this._fetchJson('/api/v1/banks');
+      }
+
+      async getPairwiseSessions() {
+        return this._fetchJson('/api/v1/psi/sessions');
+      }
+
+      async getInvestigationLeads(filters = {}) {
+        const params = new URLSearchParams();
+        if (filters.search) params.append('search', filters.search);
+        if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+        if (filters.priority && filters.priority !== 'ALL') params.append('priority', filters.priority);
+        if (filters.bank && filters.bank !== 'ALL') params.append('bank_id', filters.bank);
+        if (filters.rule && filters.rule !== 'ALL') params.append('rule', filters.rule);
+        
+        const qs = params.toString();
+        return this._fetchJson(`/api/v1/investigation-leads${qs ? '?' + qs : ''}`);
+      }
+
+      async getInvestigationLead(leadId) {
+        return this._fetchJson(`/api/v1/investigation-leads/${encodeURIComponent(leadId)}`);
+      }
+
+      async getLedgerEvents(filters = {}) {
+        const params = new URLSearchParams();
+        if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+        if (filters.data_structure && filters.data_structure !== 'ALL') params.append('data_structure', filters.data_structure);
+        const qs = params.toString();
+        return this._fetchJson(`/api/v1/privacy-ledger/events${qs ? '?' + qs : ''}`);
+      }
+
+      async getLedgerVerification() {
+        return this._fetchJson('/api/v1/privacy-ledger/verification');
+      }
+
+      async getRuleDefinitions() {
+        return this._fetchJson('/api/v1/rules');
+      }
+    }
+
+    // Provider Factory
+    function getActiveDataProvider() {
+      if (CONFIG.DATA_MODE === 'api') {
+        return new ApiDataProvider(CONFIG.API_BASE_URL, CONFIG.REQUEST_TIMEOUT_MS);
+      }
+      return new DemoDataProvider();
+    }
+
+    /* Mode Switching Helper */
+    function toggleDataMode() {
+      CONFIG.DATA_MODE = (CONFIG.DATA_MODE === 'demo') ? 'api' : 'demo';
+      updateEnvironmentHeaderUI();
+      showToast(`Switched to ${CONFIG.DATA_MODE === 'api' ? 'API Mode' : 'Demo Environment'}`);
+      renderView(currentView);
+    }
+
+    function updateEnvironmentHeaderUI() {
+      const isDemo = CONFIG.DATA_MODE === 'demo';
+      const envChip = document.getElementById('envChip');
+      const envChipText = document.getElementById('envChipText');
+      const sbPill = document.getElementById('sidebarSourcePill');
+      const sbText = document.getElementById('sidebarSourceText');
+      const sbToggle = document.getElementById('sidebarToggleTarget');
+
+      if (isDemo) {
+        envChip.className = 'env-chip demo';
+        envChipText.textContent = 'DEMO ENVIRONMENT';
+        sbPill.className = 'source-pill demo';
+        sbText.textContent = 'SIMULATION';
+        sbToggle.textContent = 'API Mode';
+      } else {
+        envChip.className = 'env-chip api';
+        envChipText.textContent = 'API MODE';
+        sbPill.className = 'source-pill api';
+        sbText.textContent = 'API MODE';
+        sbToggle.textContent = 'Demo Mode';
+      }
+    }
+
+    /* ==========================================================================
+       4. View Router & Rendering Engine
+       ========================================================================== */
+    function navigate(viewName) {
+      currentView = viewName;
+      window.location.hash = viewName;
+
+      // Update Nav active states
+      const navIds = ['overview', 'leads', 'network', 'ledger', 'rules'];
+      navIds.forEach(id => {
+        const el = document.getElementById(`nav-${id}`);
+        if (el) {
+          if (id === viewName) {
+            el.classList.add('active');
+            el.setAttribute('aria-current', 'page');
+          } else {
+            el.classList.remove('active');
+            el.removeAttribute('aria-current');
+          }
+        }
+      });
+
+      // Update Top Header Titles
+      const headerTitle = document.getElementById('headerTitle');
+      const headerSubtitle = document.getElementById('headerSubtitle');
+      
+      switch(viewName) {
+        case 'overview':
+          headerTitle.textContent = 'Cross-bank overview';
+          headerSubtitle.textContent = 'Cross-bank signals without pooling raw transaction data.';
+          break;
+        case 'leads':
+          headerTitle.textContent = 'Investigation Leads';
+          headerSubtitle.textContent = 'Privacy-preserving entity matches requiring local bank review.';
+          break;
+        case 'network':
+          headerTitle.textContent = 'Bank Network Topology';
+          headerSubtitle.textContent = 'Participating agents, local candidate sets, and pairwise PSI sessions.';
+          break;
+        case 'ledger':
+          headerTitle.textContent = 'Privacy Leakage Ledger';
+          headerSubtitle.textContent = 'Verifiable SHA-256 audit chain recording observable protocol telemetry.';
+          break;
+        case 'rules':
+          headerTitle.textContent = 'Local Risk Signals';
+          headerSubtitle.textContent = 'Explainable heuristic typologies and data completeness indicators.';
+          break;
+      }
+
+      toggleMobileSidebar(false);
+      renderView(viewName);
+    }
+
+    async function renderView(viewName) {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `
+        <div class="state-card">
+          <div class="spinner"></div>
+          <div class="state-title">Loading telemetry data...</div>
+          <div class="state-desc">${CONFIG.DATA_MODE === 'demo' ? 'Retrieving deterministic simulation fixtures' : 'Querying backend API endpoints at ' + CONFIG.API_BASE_URL}</div>
+        </div>
+      `;
+
+      try {
+        const provider = getActiveDataProvider();
+        switch(viewName) {
+          case 'overview':
+            await renderOverviewView(container, provider);
+            break;
+          case 'leads':
+            await renderLeadsView(container, provider);
+            break;
+          case 'network':
+            await renderNetworkView(container, provider);
+            break;
+          case 'ledger':
+            await renderLedgerView(container, provider);
+            break;
+          case 'rules':
+            await renderRulesView(container, provider);
+            break;
+          default:
+            await renderOverviewView(container, provider);
+        }
+      } catch (err) {
+        renderErrorState(container, err, () => renderView(viewName));
+      }
+    }
+
+    function renderErrorState(container, error, retryFn) {
+      const isDemo = CONFIG.DATA_MODE === 'demo';
+      container.innerHTML = `
+        <div class="state-card" style="border-color: rgba(239, 68, 68, 0.3);">
+          <div class="state-icon" style="background: var(--status-danger-bg); color: var(--status-danger-text);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="state-title" style="color: var(--status-danger-text);">Data Retrieval Failed</div>
+          <div class="state-desc">
+            ${error.message || 'An unexpected error occurred while communicating with the data provider.'}
+            <br><br>
+            <span style="font-size: 11.5px; color: var(--text-muted);">
+              Current Mode: <strong>${CONFIG.DATA_MODE.toUpperCase()}</strong>. In API Mode, ensure the SignalMesh FastAPI backend is running locally on port 8000 with CORS configured. The frontend never silently falls back to mock fixtures.
+            </span>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button class="btn btn-primary" onclick="window.currentRetryFn()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M8 16H3v5"/>
+              </svg>
+              Retry Request
+            </button>
+            <button class="btn btn-secondary" onclick="toggleDataMode()">
+              Switch to Demo Mode
+            </button>
+          </div>
+        </div>
+      `;
+      window.currentRetryFn = retryFn;
+    }
+
+    /* ==========================================================================
+       5. View 1: Cross-Bank Overview
+       ========================================================================== */
+    async function renderOverviewView(container, provider) {
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const suffix = isDemo ? ' (demo)' : '';
+
+      // Fetch normalized data in parallel
+      const [summary, leads, sessions] = await Promise.all([
+        provider.getDashboardSummary(),
+        provider.getInvestigationLeads(),
+        provider.getPairwiseSessions()
+      ]);
+
+      const recentLeads = leads.slice(0, 5);
+      const recentSessions = sessions.slice(0, 4);
+
+      container.innerHTML = `
+        <!-- View Header & Actions -->
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2 class="view-title">Cross-bank overview</h2>
+            <p class="view-subtitle">Review privacy-preserving entity overlaps and local investigation leads across simulated bank participants.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" onclick="exportFilteredLeadsCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+              Export report
+            </button>
+            <button class="btn btn-primary" onclick="navigate('leads')">
+              View investigation leads &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards (Driven strictly by Provider) -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Simulated Participants</span>
+              <div class="metric-icon-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 21h18"/>
+                  <path d="M3 10h18"/>
+                  <path d="M5 6l7-3 7 3"/>
+                  <path d="M4 10v11"/>
+                  <path d="M20 10v11"/>
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">${summary.simulated_participants_count}</span>
+            </div>
+            <span class="metric-context">${summary.simulated_participants_list.join(' · ')}</span>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Pairwise Overlaps</span>
+              <div class="metric-icon-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="9" cy="12" r="6"/>
+                  <circle cx="15" cy="12" r="6"/>
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">${summary.pairwise_overlaps_count}</span>
+            </div>
+            <span class="metric-context">Candidate token intersections</span>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Open Leads</span>
+              <div class="metric-icon-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value">${summary.open_investigation_leads_count}</span>
+            </div>
+            <span class="metric-context">Requires compliance review</span>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Audit Chain</span>
+              <div class="metric-icon-wrap" style="color: var(--status-success-text);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value-row">
+              <span class="metric-value" style="font-size: 20px;">${summary.audit_chain_status}</span>
+            </div>
+            <span class="metric-context">${summary.audit_chain_verified_events} verified events</span>
+          </div>
+        </div>
+
+        <!-- Cross-Bank Network Panel (SVG Interactive Diagram) -->
+        <div class="panel-card">
+          <div class="panel-header-row">
+            <div class="panel-titles">
+              <h3 class="panel-title">Cross-bank network</h3>
+              <p class="panel-subtitle">Pairwise PSI sessions · local investigative context stays with each bank.</p>
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted);">
+              Protocol: <span class="badge badge-violet">ECDH_OPRF_PSI</span>
+            </div>
+          </div>
+
+          <div class="network-container">
+            <!-- Dot-matrix decorative globe backdrop -->
+            <div class="globe-backdrop" aria-hidden="true">
+              <svg width="280" height="280" viewBox="0 0 200 200" fill="none" stroke="#8B5CF6" stroke-width="0.75" stroke-dasharray="1 3">
+                <circle cx="100" cy="100" r="90"/>
+                <ellipse cx="100" cy="100" rx="90" ry="30"/>
+                <ellipse cx="100" cy="100" rx="90" ry="60"/>
+                <ellipse cx="100" cy="100" rx="30" ry="90"/>
+                <ellipse cx="100" cy="100" rx="60" ry="90"/>
+                <line x1="100" y1="10" x2="100" y2="190"/>
+                <line x1="10" y1="100" x2="190" y2="100"/>
+              </svg>
+            </div>
+
+            <!-- SVG Graph Rendering Nodes and Pairwise Edges -->
+            <svg class="network-svg" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <!-- Gradients & Glow Filters -->
+                <linearGradient id="linkGradAB" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="#A78BFA" stop-opacity="0.8"/>
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                </filter>
+              </defs>
+
+              <!-- Pairwise Links with Bidirectional Session Indicators -->
+              <!-- Edge Bank A (200, 100) <-> Bank B (600, 100) -->
+              <path d="M 200 100 L 600 100" stroke="#8B5CF6" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.85"/>
+              <rect x="360" y="85" width="80" height="28" rx="14" fill="#181822" stroke="rgba(139, 92, 246, 0.5)"/>
+              <text x="400" y="103" font-family="var(--font-family)" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">5 Overlaps</text>
+
+              <!-- Edge Bank A (200, 100) <-> Bank C (400, 240) -->
+              <path d="M 200 100 L 400 240" stroke="#8B5CF6" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.85"/>
+              <rect x="260" y="160" width="80" height="28" rx="14" fill="#181822" stroke="rgba(139, 92, 246, 0.5)"/>
+              <text x="300" y="178" font-family="var(--font-family)" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">4 Overlaps</text>
+
+              <!-- Edge Bank B (600, 100) <-> Bank C (400, 240) -->
+              <path d="M 600 100 L 400 240" stroke="#8B5CF6" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.85"/>
+              <rect x="460" y="160" width="80" height="28" rx="14" fill="#181822" stroke="rgba(139, 92, 246, 0.5)"/>
+              <text x="500" y="178" font-family="var(--font-family)" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">3 Overlaps</text>
+
+              <!-- Bank Node A -->
+              <g transform="translate(200, 100)" cursor="pointer" onclick="navigate('network')">
+                <circle r="44" fill="rgba(139, 92, 246, 0.12)" stroke="#8B5CF6" stroke-width="2" filter="url(#glow)"/>
+                <circle r="36" fill="#14141B" stroke="rgba(255, 255, 255, 0.1)"/>
+                <text y="-6" font-family="var(--font-family)" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank A</text>
+                <text y="12" font-family="var(--font-family)" font-size="10" font-weight="500" fill="#A78BFA" text-anchor="middle">Agent A</text>
+                <rect x="-35" y="48" width="70" height="18" rx="9" fill="#1F1F2A" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text y="61" font-family="var(--font-family)" font-size="9.5" font-weight="600" fill="#34D399" text-anchor="middle">18 Tokens</text>
+              </g>
+
+              <!-- Bank Node B -->
+              <g transform="translate(600, 100)" cursor="pointer" onclick="navigate('network')">
+                <circle r="44" fill="rgba(139, 92, 246, 0.12)" stroke="#8B5CF6" stroke-width="2" filter="url(#glow)"/>
+                <circle r="36" fill="#14141B" stroke="rgba(255, 255, 255, 0.1)"/>
+                <text y="-6" font-family="var(--font-family)" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank B</text>
+                <text y="12" font-family="var(--font-family)" font-size="10" font-weight="500" fill="#A78BFA" text-anchor="middle">Agent B</text>
+                <rect x="-35" y="48" width="70" height="18" rx="9" fill="#1F1F2A" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text y="61" font-family="var(--font-family)" font-size="9.5" font-weight="600" fill="#34D399" text-anchor="middle">15 Tokens</text>
+              </g>
+
+              <!-- Bank Node C -->
+              <g transform="translate(400, 240)" cursor="pointer" onclick="navigate('network')">
+                <circle r="44" fill="rgba(139, 92, 246, 0.12)" stroke="#8B5CF6" stroke-width="2" filter="url(#glow)"/>
+                <circle r="36" fill="#14141B" stroke="rgba(255, 255, 255, 0.1)"/>
+                <text y="-6" font-family="var(--font-family)" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">Bank C</text>
+                <text y="12" font-family="var(--font-family)" font-size="10" font-weight="500" fill="#A78BFA" text-anchor="middle">Agent C</text>
+                <rect x="-35" y="48" width="70" height="18" rx="9" fill="#1F1F2A" stroke="rgba(255, 255, 255, 0.08)"/>
+                <text y="61" font-family="var(--font-family)" font-size="9.5" font-weight="600" fill="#34D399" text-anchor="middle">12 Tokens</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="network-legend">
+            <div class="legend-item">
+              <span class="legend-line"></span>
+              <span>Pairwise PSI Session</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-indicator" style="background-color: var(--violet-primary);"></span>
+              <span>Simulated Bank-Local Agent</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-indicator" style="background-color: #34D399;"></span>
+              <span>Candidate Entity Overlap</span>
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">
+              (Note: Pairwise discovery sessions, not joint 3-party intersection. Local graphs remain inside each bank.)
+            </span>
+          </div>
+        </div>
+
+        <!-- Recent Leads & Recent Sessions Dual Layout -->
+        <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 20px;">
+          <!-- Left: Recent Leads Table -->
+          <div class="panel-card" style="padding: 20px;">
+            <div class="panel-header-row" style="margin-bottom: 4px;">
+              <div>
+                <h3 class="panel-title">Recent investigation leads</h3>
+                <p class="panel-subtitle">Opaque token matches with multi-bank rule indicators</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="navigate('leads')">
+                View all leads &rarr;
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Lead / Token</th>
+                    <th>Matched Banks</th>
+                    <th>Rules</th>
+                    <th>Priority</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${recentLeads.map(lead => `
+                    <tr>
+                      <td>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                          <span style="font-weight: 600; color: #FFFFFF;">${lead.lead_id}</span>
+                          <span class="token-chip">${lead.canonical_token.substring(0, 16)}...</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span style="font-size: 12px; color: var(--text-primary);">
+                          ${lead.matched_banks.join(' &middot; ')}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge ${lead.triggered_rules.includes('RULE_INCOMPLETE_CURRENCY_COVERAGE') ? 'badge-medium' : 'badge-neutral'}">
+                          ${lead.triggered_rules.length} rule${lead.triggered_rules.length > 1 ? 's' : ''}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge ${lead.priority === 'HIGH' ? 'badge-high' : lead.priority === 'MEDIUM' ? 'badge-medium' : 'badge-low'}">
+                          ${lead.priority}
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-secondary btn-sm" onclick="openLeadDetail('${lead.lead_id}')">
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right: Recent Ledger Sessions -->
+          <div class="panel-card" style="padding: 20px;">
+            <div class="panel-header-row" style="margin-bottom: 4px;">
+              <div>
+                <h3 class="panel-title">Recent Privacy Ledger Events</h3>
+                <p class="panel-subtitle">Observable protocol telemetry & byte counts</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="navigate('ledger')">
+                View ledger &rarr;
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Event / Pair</th>
+                    <th>Status</th>
+                    <th>Serialized Bytes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${recentSessions.map(ev => `
+                    <tr>
+                      <td>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                          <span style="font-family: ui-monospace, monospace; font-size: 11px; color: var(--violet-light); font-weight: 600;">
+                            ${ev.event_id}
+                          </span>
+                          <span style="font-size: 11.5px; color: var(--text-secondary);">
+                            ${ev.server_bank_id} &rarr; ${ev.client_bank_id}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge ${ev.status === 'SUCCESS' ? 'badge-success' : 'badge-medium'}">
+                          ${ev.status}${suffix}
+                        </span>
+                      </td>
+                      <td>
+                        <span style="font-family: ui-monospace, monospace; font-size: 12px; color: var(--text-primary);">
+                          ${ev.total_serialized_protocol_bytes.toLocaleString()} B
+                        </span>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy Design Note (Explicit Boundary Document) -->
+        <div class="privacy-notice-panel">
+          <div class="notice-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Designed for Data Minimization</span>
+          </div>
+          <ul class="notice-list">
+            <li class="notice-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Transactions and local graphs remain strictly inside each simulated bank agent.</span>
+            </li>
+            <li class="notice-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>PSI is used to discover token overlaps without publishing complete candidate sets.</span>
+            </li>
+            <li class="notice-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>The current demo uses same-host IPC. Authenticated cross-institution network transport is not implemented yet.</span>
+            </li>
+          </ul>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       6. View 2: Investigation Leads
+       ========================================================================== */
+    async function renderLeadsView(container, provider) {
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const suffix = isDemo ? ' (demo)' : '';
+
+      // Current filter states
+      const statusFilter = window.leadStatusFilter || 'ALL';
+      const priorityFilter = window.leadPriorityFilter || 'ALL';
+      const bankFilter = window.leadBankFilter || 'ALL';
+      const ruleFilter = window.leadRuleFilter || 'ALL';
+
+      const leads = await provider.getInvestigationLeads({
+        search: globalSearchQuery,
+        status: statusFilter,
+        priority: priorityFilter,
+        bank: bankFilter,
+        rule: ruleFilter
+      });
+
+      container.innerHTML = `
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2 class="view-title">Investigation Leads</h2>
+            <p class="view-subtitle">Review entity overlaps discovered via cryptographic PSI. Local transaction context stays with each reporting bank.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" onclick="exportFilteredLeadsCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+              Export CSV (${leads.length})
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="filter-bar">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="filterStatus" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">STATUS</label>
+            <select id="filterStatus" class="filter-select" onchange="applyLeadFilter('status', this.value)">
+              <option value="ALL" ${statusFilter === 'ALL' ? 'selected' : ''}>All Statuses</option>
+              <option value="OPEN" ${statusFilter === 'OPEN' ? 'selected' : ''}>Open</option>
+              <option value="IN_REVIEW" ${statusFilter === 'IN_REVIEW' ? 'selected' : ''}>In Review</option>
+              <option value="ESCALATED" ${statusFilter === 'ESCALATED' ? 'selected' : ''}>Escalated</option>
+              <option value="RESOLVED" ${statusFilter === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="filterPriority" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">PRIORITY</label>
+            <select id="filterPriority" class="filter-select" onchange="applyLeadFilter('priority', this.value)">
+              <option value="ALL" ${priorityFilter === 'ALL' ? 'selected' : ''}>All Priorities</option>
+              <option value="HIGH" ${priorityFilter === 'HIGH' ? 'selected' : ''}>High</option>
+              <option value="MEDIUM" ${priorityFilter === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+              <option value="LOW" ${priorityFilter === 'LOW' ? 'selected' : ''}>Low</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="filterBank" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">BANK</label>
+            <select id="filterBank" class="filter-select" onchange="applyLeadFilter('bank', this.value)">
+              <option value="ALL" ${bankFilter === 'ALL' ? 'selected' : ''}>All Banks</option>
+              <option value="Bank A" ${bankFilter === 'Bank A' ? 'selected' : ''}>Bank A</option>
+              <option value="Bank B" ${bankFilter === 'Bank B' ? 'selected' : ''}>Bank B</option>
+              <option value="Bank C" ${bankFilter === 'Bank C' ? 'selected' : ''}>Bank C</option>
+            </select>
+          </div>
+
+          <button class="filter-clear-btn" onclick="clearAllFilters()">
+            Clear filters
+          </button>
+        </div>
+
+        <!-- Leads Data Table -->
+        <div class="panel-card" style="padding: 0;">
+          <div class="table-container" style="border: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lead / Opaque Entity Token</th>
+                  <th>Matched Banks</th>
+                  <th>Local Rule Indicators</th>
+                  <th>Risk Score</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Last Updated</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${leads.length === 0 ? `
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 48px;">
+                      <div style="color: var(--text-muted); font-size: 14px;">No investigation leads match the current filters.</div>
+                      <button class="btn btn-secondary btn-sm" style="margin-top: 12px;" onclick="clearAllFilters()">Reset All Filters</button>
+                    </td>
+                  </tr>
+                ` : leads.map(lead => `
+                  <tr>
+                    <td>
+                      <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span style="font-weight: 700; color: #FFFFFF;">${lead.lead_id}</span>
+                        <div class="token-chip" title="Canonical Opaque Token">
+                          <span>${lead.canonical_token}</span>
+                          <button class="token-copy-btn" onclick="copyToClipboard('${lead.canonical_token}')" aria-label="Copy token">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style="font-size: 12.5px; font-weight: 500; color: var(--text-primary);">
+                        ${lead.matched_banks.join(' · ')}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 280px;">
+                        ${lead.triggered_rules.map(r => `
+                          <span class="badge ${r === 'RULE_INCOMPLETE_CURRENCY_COVERAGE' ? 'badge-medium' : 'badge-neutral'}">
+                            ${r === 'RULE_STRUCTURING_SMURFING' ? 'Structuring' :
+                              r === 'RULE_RAPID_PASS_THROUGH' ? 'Rapid pass-through' :
+                              r === 'RULE_HIGH_FAN_IN' ? 'High fan-in' :
+                              r === 'RULE_HIGH_FAN_OUT' ? 'High fan-out' :
+                              r === 'RULE_HIGH_VALUE_CONDUIT' ? 'High-value conduit' :
+                              'Currency warning'}
+                          </span>
+                        `).join('')}
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; color: var(--text-primary);">
+                          ${(lead.local_risk_score * 100).toFixed(0)}%
+                        </span>
+                        <div style="width: 48px; height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: var(--radius-pill); overflow: hidden;">
+                          <div style="width: ${(lead.local_risk_score * 100)}%; height: 100%; background: ${lead.local_risk_score >= 0.75 ? 'var(--status-danger)' : lead.local_risk_score >= 0.5 ? 'var(--status-warning)' : 'var(--status-info)'};"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge ${lead.priority === 'HIGH' ? 'badge-high' : lead.priority === 'MEDIUM' ? 'badge-medium' : 'badge-low'}">
+                        ${lead.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge ${lead.status === 'OPEN' ? 'badge-violet' : lead.status === 'RESOLVED' ? 'badge-success' : 'badge-neutral'}">
+                        ${lead.status}${suffix}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-size: 11.5px; color: var(--text-muted);">
+                        ${new Date(lead.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-secondary btn-sm" onclick="openLeadDetail('${lead.lead_id}')">
+                        Inspect
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function applyLeadFilter(filterType, value) {
+      if (filterType === 'status') window.leadStatusFilter = value;
+      if (filterType === 'priority') window.leadPriorityFilter = value;
+      if (filterType === 'bank') window.leadBankFilter = value;
+      if (filterType === 'rule') window.leadRuleFilter = value;
+      renderView('leads');
+    }
+
+    function clearAllFilters() {
+      window.leadStatusFilter = 'ALL';
+      window.leadPriorityFilter = 'ALL';
+      window.leadBankFilter = 'ALL';
+      window.leadRuleFilter = 'ALL';
+      globalSearchQuery = '';
+      const s = document.getElementById('globalSearchInput');
+      if (s) s.value = '';
+      renderView('leads');
+    }
+
+    /* ==========================================================================
+       7. View 3: Bank Network Topology
+       ========================================================================== */
+    async function renderNetworkView(container, provider) {
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const suffix = isDemo ? ' (demo)' : '';
+
+      const [banks, sessions] = await Promise.all([
+        provider.getBanks(),
+        provider.getPairwiseSessions()
+      ]);
+
+      container.innerHTML = `
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2 class="view-title">Bank Network Topology</h2>
+            <p class="view-subtitle">Autonomous bank agents collaborating via Private Set Intersection (PSI). Raw transaction files remain isolated inside each bank perimeter.</p>
+          </div>
+        </div>
+
+        <!-- Participating Bank Agent Cards -->
+        <div class="banks-grid">
+          ${banks.map(bank => `
+            <div class="bank-card">
+              <div class="bank-card-header">
+                <div class="bank-title-group">
+                  <div class="bank-avatar">${bank.bank_id.split('_')[1]}</div>
+                  <div>
+                    <h3 style="font-size: 15px; font-weight: 700; color: #FFFFFF;">${bank.display_name}</h3>
+                    <span style="font-size: 11px; color: var(--text-muted); font-family: ui-monospace, monospace;">${bank.bank_id}</span>
+                  </div>
+                </div>
+                <span class="badge badge-success">
+                  <span class="badge-dot"></span>
+                  ${bank.status}${suffix}
+                </span>
+              </div>
+
+              <div class="detail-card">
+                <div class="detail-row">
+                  <span class="detail-row-label">Local Candidate Tokens</span>
+                  <span class="detail-row-value" style="font-family: ui-monospace, monospace;">${bank.local_candidate_token_count}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-row-label">Pairwise Sessions</span>
+                  <span class="detail-row-value">${bank.pairwise_sessions_completed} completed</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-row-label">Last Agent Activity</span>
+                  <span class="detail-row-value" style="font-size: 11.5px; color: var(--text-muted);">
+                    ${new Date(bank.last_activity_timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Evaluated Local Rules</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                  ${bank.local_rules_evaluated.map(r => `
+                    <span class="badge badge-neutral" style="font-size: 10px;">
+                      ${r.replace('RULE_', '').toLowerCase()}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                Operational data isolation: Enforced via local agent process boundary.
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Pairwise Sessions Detail Panel -->
+        <div class="panel-card">
+          <div class="panel-header-row">
+            <div>
+              <h3 class="panel-title">Directional Pairwise Collaborations</h3>
+              <p class="panel-subtitle">Asymmetric revelation accounting (OpenMined ECDH-OPRF PSI reveals match indices only to the client)</p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Session / Pair</th>
+                  <th>Server (Setup Provider)</th>
+                  <th>Client (Recipient)</th>
+                  <th>Data Structure</th>
+                  <th>Serialized Protocol Bytes</th>
+                  <th>Revealed Matches</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sessions.map(s => `
+                  <tr>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; color: #FFFFFF;">
+                        ${s.pair_id}
+                      </span>
+                    </td>
+                    <td><span class="badge badge-neutral">${s.server_bank_id}</span></td>
+                    <td><span class="badge badge-violet">${s.client_bank_id}</span></td>
+                    <td><span class="badge badge-neutral">${s.data_structure}</span></td>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-size: 12px;">
+                        ${s.total_serialized_protocol_bytes.toLocaleString()} bytes
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-weight: 700; color: #34D399;">
+                        ${s.revealed_cardinality} matches
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge ${s.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">
+                        ${s.status}${suffix}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       8. View 4: Privacy Ledger & Chain Verification
+       ========================================================================== */
+    async function renderLedgerView(container, provider) {
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const suffix = isDemo ? ' (demo)' : '';
+
+      const [events, verification] = await Promise.all([
+        provider.getLedgerEvents(),
+        provider.getLedgerVerification()
+      ]);
+
+      container.innerHTML = `
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2 class="view-title">Privacy Leakage Ledger</h2>
+            <p class="view-subtitle">Verifiable SHA-256 hash-chain audit log. Records observable protocol telemetry (serialized message bytes, cardinality, timings) without storing private member tokens.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" onclick="simulateVerification()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              Simulate Verification (Client)
+            </button>
+          </div>
+        </div>
+
+        <!-- Hash-Chain Structure Header Explanation Card -->
+        <div class="detail-card" style="background: rgba(139, 92, 246, 0.05); border-color: var(--border-accent);">
+          <div style="font-size: 13px; font-weight: 700; color: var(--violet-light);">SignalMesh Canonical JSON (SMCJ) Audit Fields</div>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+            Each audit record links to its predecessor via <code style="color: #FFFFFF;">prev_hash</code>. The canonical payload strictly normalizes negative zeroes (<code style="color: #FFFFFF;">-0.0 &rarr; 0.0</code>), enforces Unicode key ordering, and computes an unpadded SHA-256 digest over stored IEEE 754 precision fields.
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+            <span class="badge badge-neutral">sequence_number</span>
+            <span class="badge badge-neutral">event_id</span>
+            <span class="badge badge-neutral">prev_hash</span>
+            <span class="badge badge-neutral">event_hash</span>
+            <span class="badge badge-neutral">session_id</span>
+            <span class="badge badge-neutral">total_serialized_protocol_bytes</span>
+          </div>
+        </div>
+
+        <!-- Ledger Events Table -->
+        <div class="panel-card" style="padding: 0;">
+          <div class="table-container" style="border: none;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Seq #</th>
+                  <th>Event ID</th>
+                  <th>Original Session ID</th>
+                  <th>Pair</th>
+                  <th>Data Structure</th>
+                  <th>Serialized Bytes</th>
+                  <th>Status</th>
+                  <th>Event Hash (Canonical SHA-256)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${events.map(ev => `
+                  <tr>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-weight: 700; color: #FFFFFF;">
+                        #${ev.sequence_number}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--violet-light); font-weight: 600;">
+                        ${ev.event_id}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--text-muted);" title="${ev.session_id}">
+                        ${ev.session_id}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-size: 12px; color: var(--text-primary);">
+                        ${ev.server_bank_id} &rarr; ${ev.client_bank_id}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge badge-neutral">${ev.data_structure}</span>
+                    </td>
+                    <td>
+                      <span style="font-family: ui-monospace, monospace; font-size: 12px;">
+                        ${ev.total_serialized_protocol_bytes.toLocaleString()} B
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge ${ev.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">
+                        ${ev.status}${suffix}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="token-chip" style="font-size: 10px;" title="${ev.event_hash}">
+                        ${ev.event_hash.substring(0, 16)}...
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Threat Boundary & Honest Limitations -->
+        <div class="detail-card">
+          <div style="font-size: 12.5px; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--status-warning-text)" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Audit-Integrity Guarantees & Threat Boundary Limitations
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.45;">
+            Local hash chaining detects row modifications, middle deletions, and reordering. However, detecting <strong>tail truncation</strong> requires an independently retained external checkpoint (currently <em>Not configured</em> in prototype). A privileged operating-system administrator with direct SQLite write access remains outside the local threat boundary.
+          </p>
+        </div>
+      `;
+    }
+
+    function simulateVerification() {
+      showToast("Verification Simulation: Cryptographic hash chain verified (all sequence hashes unbroken).");
+    }
+
+    /* ==========================================================================
+       9. View 5: Local Risk Signals (AML Rules Catalog)
+       ========================================================================== */
+    async function renderRulesView(container, provider) {
+      const rules = await provider.getRuleDefinitions();
+
+      container.innerHTML = `
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2 class="view-title">Local Risk Signals Catalog</h2>
+            <p class="view-subtitle">Explainable heuristics evaluated exclusively within bank-local graph memory. Legal Notice: Heuristic indicators represent investigative leads only and DO NOT constitute proof of criminal activity.</p>
+          </div>
+        </div>
+
+        <div class="rules-grid">
+          ${rules.map(rule => `
+            <div class="rule-card ${rule.is_data_completeness_warning ? 'warning-special' : ''}">
+              <div class="rule-card-header">
+                <div class="rule-name-wrap">
+                  <h3 class="rule-title">${rule.name}</h3>
+                  <span class="rule-id">${rule.rule_id}</span>
+                </div>
+                <span class="badge ${rule.is_data_completeness_warning ? 'badge-medium' : 'badge-violet'}">
+                  ${rule.is_data_completeness_warning ? 'DATA WARNING (+0.00)' : 'RISK WEIGHT: +' + rule.risk_weight.toFixed(2)}
+                </span>
+              </div>
+
+              <p class="rule-desc">${rule.description}</p>
+
+              <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Detection Criteria</span>
+                <div class="rule-criteria-box" style="margin-top: 4px;">
+                  ${rule.criteria}
+                </div>
+              </div>
+
+              <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Supporting Evidence Keys</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+                  ${rule.sample_evidence_keys.map(k => `
+                    <span class="badge badge-neutral" style="font-family: ui-monospace, monospace; font-size: 10px;">
+                      ${k}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+
+              ${rule.is_data_completeness_warning ? `
+                <div style="font-size: 11.5px; color: var(--status-warning-text); border-top: 1px solid rgba(245, 158, 11, 0.2); padding-top: 8px;">
+                  Audit Policy: Currency conversion gaps are recorded as data warnings and NEVER artificially inflate AML criminal risk scores.
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       10. Lead Details Right-Side Drawer Modal
+       ========================================================================== */
+    async function openLeadDetail(leadId) {
+      const provider = getActiveDataProvider();
+      const lead = await provider.getInvestigationLead(leadId);
+      if (!lead) {
+        showToast("Lead not found");
+        return;
+      }
+
+      const drawer = document.getElementById('leadDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      const content = document.getElementById('drawerContent');
+      const title = document.getElementById('drawerLeadTitle');
+
+      title.textContent = `${lead.lead_id} — Investigative Detail`;
+
+      const scorePct = (lead.local_risk_score * 100).toFixed(0);
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const suffix = isDemo ? ' (demo)' : '';
+
+      content.innerHTML = `
+        <div class="drawer-section">
+          <span class="section-label">Opaque Entity Identifier</span>
+          <div class="token-chip" style="font-size: 13px; padding: 8px 12px; justify-content: space-between;">
+            <span>${lead.canonical_token}</span>
+            <button class="token-copy-btn" onclick="copyToClipboard('${lead.canonical_token}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <span class="section-label">Risk Scoring & Status</span>
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="detail-row-label">Reporting Institutions</span>
+              <span class="detail-row-value">${lead.matched_banks.join(' · ')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label">Investigation Status</span>
+              <span class="badge ${lead.status === 'OPEN' ? 'badge-violet' : 'badge-neutral'}">${lead.status}${suffix}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-row-label">Priority Level</span>
+              <span class="badge ${lead.priority === 'HIGH' ? 'badge-high' : lead.priority === 'MEDIUM' ? 'badge-medium' : 'badge-low'}">${lead.priority}</span>
+            </div>
+            
+            <div class="risk-meter" style="margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span style="color: var(--text-muted);">Calculated Local Risk Score</span>
+                <span style="font-weight: 700; color: #FFFFFF;">${scorePct}%</span>
+              </div>
+              <div class="risk-meter-bar">
+                <div class="risk-meter-fill" style="width: ${scorePct}%; background: ${lead.local_risk_score >= 0.75 ? 'var(--status-danger)' : lead.local_risk_score >= 0.5 ? 'var(--status-warning)' : 'var(--status-info)'};"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <span class="section-label">Triggered Heuristics & Explanations</span>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${lead.rule_explanations.map((exp, idx) => `
+              <div class="detail-card" style="border-left: 3px solid ${lead.triggered_rules[idx] === 'RULE_INCOMPLETE_CURRENCY_COVERAGE' ? 'var(--status-warning)' : 'var(--violet-primary)'};">
+                <span style="font-weight: 700; font-size: 12px; color: #FFFFFF;">
+                  ${lead.triggered_rules[idx] || 'Rule'}
+                </span>
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">${exp}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <span class="section-label">Bank-Local Supporting Evidence</span>
+          <div class="detail-card">
+            ${Object.entries(lead.supporting_evidence).map(([k, v]) => `
+              <div class="detail-row">
+                <span class="detail-row-label" style="font-family: ui-monospace, monospace; font-size: 11px;">${k}</span>
+                <span class="detail-row-value" style="font-family: ui-monospace, monospace; font-size: 11.5px;">
+                  ${v === null ? '—' : typeof v === 'number' && k.includes('amount') ? '$' + v.toLocaleString() : String(v)}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Mandatory Non-Prosecution Notice -->
+        <div class="legal-notice-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <strong>Compliance Disclaimer:</strong> A cryptographic token match is an investigative anomaly indicator, not proof of wrongdoing. Full account context remains inside the originating bank's firewalls.
+          </div>
+        </div>
+      `;
+
+      drawer.classList.add('active');
+      drawer.setAttribute('aria-hidden', 'false');
+      backdrop.classList.add('active');
+    }
+
+    function closeLeadDrawer() {
+      const drawer = document.getElementById('leadDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      if (drawer) {
+        drawer.classList.remove('active');
+        drawer.setAttribute('aria-hidden', 'true');
+      }
+      if (backdrop) backdrop.classList.remove('active');
+    }
+
+    /* Escape Key Handler for Accessibility */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLeadDrawer();
+        toggleMobileSidebar(false);
+      }
+    });
+
+    /* ==========================================================================
+       11. CSV Export Generator
+       ========================================================================== */
+    async function exportFilteredLeadsCSV() {
+      const provider = getActiveDataProvider();
+      const leads = await provider.getInvestigationLeads({
+        search: globalSearchQuery,
+        status: window.leadStatusFilter,
+        priority: window.leadPriorityFilter,
+        bank: window.leadBankFilter,
+        rule: window.leadRuleFilter
+      });
+
+      const isDemo = (CONFIG.DATA_MODE === 'demo');
+      const sourceHeader = isDemo 
+        ? "# SignalMesh Investigation Leads Export - Source: DEMO ENVIRONMENT (Simulated Data Only)\n"
+        : "# SignalMesh Investigation Leads Export - Source: API MODE (Local Backend Query)\n";
+
+      const headers = ["Lead ID", "Opaque Entity Token", "Matched Banks", "Triggered Rules", "Local Risk Score", "Priority", "Status", "Updated At"];
+      
+      const rows = leads.map(l => [
+        `"${l.lead_id}"`,
+        `"${l.canonical_token}"`,
+        `"${l.matched_banks.join(';')}"`,
+        `"${l.triggered_rules.join(';')}"`,
+        l.local_risk_score.toFixed(2),
+        `"${l.priority}"`,
+        `"${l.status}"`,
+        `"${l.updated_at}"`
+      ]);
+
+      const csvContent = sourceHeader + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `signalmesh_leads_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Exported ${leads.length} leads to CSV (${isDemo ? 'Demo Mode' : 'API Mode'})`);
+    }
+
+    /* ==========================================================================
+       12. Global Search & Utilities
+       ========================================================================== */
+    function handleGlobalSearch(val) {
+      globalSearchQuery = val.trim();
+      if (currentView !== 'leads' && currentView !== 'overview') {
+        navigate('leads');
+      } else {
+        renderView(currentView);
+      }
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('globalSearchInput');
+      if (input) input.value = '';
+      globalSearchQuery = '';
+      renderView(currentView);
+    }
+
+    function toggleMobileSidebar(open) {
+      const sb = document.getElementById('appSidebar');
+      const ov = document.getElementById('mobileOverlay');
+      const toggle = document.querySelector('.menu-toggle');
+      if (sb) {
+        if (open) {
+          sb.classList.add('open');
+          if (ov) ov.classList.add('active');
+          if (toggle) toggle.setAttribute('aria-expanded', 'true');
+        } else {
+          sb.classList.remove('open');
+          if (ov) ov.classList.remove('active');
+          if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`Copied token to clipboard: ${text.substring(0, 12)}...`);
+        });
+      } else {
+        showToast("Clipboard copy unsupported");
+      }
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--violet-light)" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>${msg}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        toast.style.transition = 'all 0.2s';
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
+    }
+
+    /* Initialize App on DOMContentLoaded */
+    document.addEventListener('DOMContentLoaded', () => {
+      // Read URL Hash if present
+      const hash = window.location.hash.replace('#', '');
+      const initialView = ['overview', 'leads', 'network', 'ledger', 'rules'].includes(hash) ? hash : 'overview';
+      updateEnvironmentHeaderUI();
+      navigate(initialView);
+    });
+  </script>
+</body>
+</html>

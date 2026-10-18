@@ -8,13 +8,13 @@
 [![Tests Passing](https://img.shields.io/badge/tests-123%20passed-brightgreen.svg)](file:///Users/gyanprakash09/Developer/Zdatathon/backend/tests)
 [![Platform LinuxONE](https://img.shields.io/badge/IBM%20LinuxONE-s390x%20tested-navy.svg)](#6-ibm-linuxone-s390x-platform-compatibility)
 [![PSI OpenMined](https://img.shields.io/badge/PSI-OpenMined%202.0.6-purple.svg)](https://github.com/OpenMined/PSI)
-[![Video Walkthrough](https://img.shields.io/badge/Demo%20Video-4%3A01%20Loom%20HD-red.svg)](signalmesh_loom_presentation_walkthrough.mp4)
+[![UI Showcase](https://img.shields.io/badge/UI%20Showcase-7%20Views%20HD-violet.svg)](#2-ui-showcase-gallery--walkthrough)
 
 ---
 
 ## Table of Contents
 1. [Executive Summary & Problem Statement](#1-executive-summary--problem-statement)
-2. [Video Walkthrough & Showcase Gallery](#2-video-walkthrough--showcase-gallery)
+2. [UI Showcase Gallery & Walkthrough](#2-ui-showcase-gallery--walkthrough)
 3. [System Architecture & Privacy Boundaries](#3-system-architecture--privacy-boundaries)
 4. [Key Features & Implemented Capabilities](#4-key-features--implemented-capabilities)
 5. [Interactive Web Application Walkthrough](#5-interactive-web-application-walkthrough)
@@ -60,13 +60,9 @@ Under strict banking secrecy legislation, GDPR, and data protection mandates, **
 
 ---
 
-## 2. Video Walkthrough & Showcase Gallery
+## 2. UI Showcase Gallery & Walkthrough
 
-### Official Loom-Style Video Walkthrough (4:01 min)
-A complete, narrated video demonstration walking through the entire platform from the landing page to the live operational dashboard:
-- **Video File**: [`signalmesh_loom_presentation_walkthrough.mp4`](signalmesh_loom_presentation_walkthrough.mp4)
-- **Format**: 1920×1080 Full HD, 30 fps, H.264/AAC, professional voiceover with circular presenter webcam and chapter subtitles.
-- **Duration**: **4 minutes, 1 second** *(exceeds the 2:30 min Datathon requirement)*.
+The platform features a complete browser-based workflow from an institutional landing page to real-time graph intelligence and cross-bank cryptographic PSI matching. Judges can experience the demonstration either via the interactive dashboard's built-in **"Auto-Play Loom Demo"** mode or by generating a 1080p narrated presentation video locally with `backend/scripts/generate_loom_video.py`.
 
 ### Showcase Gallery
 
@@ -309,7 +305,6 @@ tests/unit/test_api_endpoints.py::test_404_handling PASSED
 ```
 .
 ├── README.md                                  # Comprehensive Platform Documentation
-├── signalmesh_loom_presentation_walkthrough.mp4 # 4:01 Min Loom Walkthrough Video
 ├── demo_showcase/                             # High-Resolution UI Screenshots
 │   ├── 01_overview_dashboard.png
 │   ├── 02_schema_validation.png

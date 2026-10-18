@@ -21,8 +21,20 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
-# Scratch & temporary render artifacts
+# Media, video & audio files (keep large binaries out of git)
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+*.webp
+*.aiff
+*.wav
+
+# Scratch, logs & temporary render artifacts
 backend/scratch/
+loom_render/
+*.log
 
 # OS metadata
 .DS_Store

@@ -1,0 +1,29 @@
+# Environments
+.venv/
+.venv311/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data & environment overrides
+.env
+*.db
+*.sqlite
+*.sqlite3
+
+# Scratch & temporary render artifacts
+backend/scratch/
+
+# OS metadata
+.DS_Store
+Thumbs.db

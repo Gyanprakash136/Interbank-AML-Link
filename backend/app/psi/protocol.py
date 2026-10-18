@@ -17,8 +17,14 @@ Privacy Guarantees Enforced:
 """
 
 from dataclasses import dataclass
-from typing import List, Sequence, Set, Any
-import private_set_intersection.python as psi
+from typing import List, Sequence, Set, Any, Optional
+
+try:
+    import private_set_intersection.python as psi
+    PSI_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    psi = None  # type: ignore
+    PSI_AVAILABLE = False
 
 
 class PSIProtocolError(Exception):
@@ -29,6 +35,31 @@ class PSIProtocolError(Exception):
 class PSIBoundaryError(TypeError):
     """Raised when non-token data (e.g. transaction rows or dicts) is passed to PSI."""
     pass
+
+
+class PSIUnavailableError(RuntimeError):
+    """Raised when an operation requires OpenMined PSI but the package is not available."""
+    pass
+
+
+def require_psi(operation: str = "PSI operation") -> Any:
+    """Returns the OpenMined PSI module or raises a clear, actionable PSIUnavailableError."""
+    global psi, PSI_AVAILABLE
+    if not PSI_AVAILABLE or psi is None:
+        try:
+            import private_set_intersection.python as psi_mod
+            psi = psi_mod
+            PSI_AVAILABLE = True
+            return psi
+        except (ImportError, ModuleNotFoundError) as exc:
+            raise PSIUnavailableError(
+                f"OpenMined PSI ('openmined.psi==2.0.6') is required to execute {operation}, "
+                f"but 'private_set_intersection.python' is not installed or available on this platform. "
+                f"On LinuxONE (s390x) or environments without OpenMined PSI, local graph analysis, "
+                f"transaction processing, and rule detection are fully supported, but collaborative "
+                f"cross-bank matching requires OpenMined PSI."
+            ) from exc
+    return psi
 
 
 def _validate_token_inputs(items: Sequence[str]) -> List[str]:
@@ -58,11 +89,12 @@ class PSIServer:
     """Wraps the OpenMined PSI Server."""
 
     def __init__(self, reveal_intersection: bool = True, key_bytes: bytes | None = None):
+        _psi = require_psi("PSIServer initialization")
         self.reveal_intersection = reveal_intersection
         if key_bytes is not None:
-            self._server = psi.server.CreateFromKey(key_bytes, reveal_intersection)
+            self._server = _psi.server.CreateFromKey(key_bytes, reveal_intersection)
         else:
-            self._server = psi.server.CreateWithNewKey(reveal_intersection)
+            self._server = _psi.server.CreateWithNewKey(reveal_intersection)
 
     def get_private_key_bytes(self) -> bytes:
         """Returns the serialized private key bytes."""
@@ -73,12 +105,13 @@ class PSIServer:
         inputs: Sequence[str],
         fpr: float = 0.001,
         num_client_inputs: int | None = None,
-        data_structure: psi.DataStructure | None = None,
-    ) -> psi.ServerSetup:
+        data_structure: Any = None,
+    ) -> Any:
         """Creates the setup message containing the encrypted server dataset."""
+        _psi = require_psi("create_setup_message")
         validated = _validate_token_inputs(inputs)
         client_count = num_client_inputs if num_client_inputs is not None else len(validated)
-        ds = data_structure if data_structure is not None else psi.DataStructure.GCS
+        ds = data_structure if data_structure is not None else _psi.DataStructure.GCS
         return self._server.CreateSetupMessage(
             fpr=fpr,
             num_client_inputs=max(1, client_count),
@@ -86,9 +119,10 @@ class PSIServer:
             ds=ds,
         )
 
-    def process_request(self, request: psi.Request) -> psi.Response:
+    def process_request(self, request: Any) -> Any:
         """Processes an encrypted client request and returns the encrypted response."""
-        if not isinstance(request, psi.Request):
+        _psi = require_psi("process_request")
+        if not isinstance(request, _psi.Request):
             raise PSIProtocolError("Request must be a psi.Request protobuf message")
         return self._server.ProcessRequest(request)
 
@@ -97,33 +131,36 @@ class PSIClient:
     """Wraps the OpenMined PSI Client."""
 
     def __init__(self, reveal_intersection: bool = True, key_bytes: bytes | None = None):
+        _psi = require_psi("PSIClient initialization")
         self.reveal_intersection = reveal_intersection
         if key_bytes is not None:
-            self._client = psi.client.CreateFromKey(key_bytes, reveal_intersection)
+            self._client = _psi.client.CreateFromKey(key_bytes, reveal_intersection)
         else:
-            self._client = psi.client.CreateWithNewKey(reveal_intersection)
+            self._client = _psi.client.CreateWithNewKey(reveal_intersection)
         self._last_inputs: List[str] = []
 
     def get_private_key_bytes(self) -> bytes:
         """Returns the serialized private key bytes."""
         return self._client.GetPrivateKeyBytes()
 
-    def create_request(self, inputs: Sequence[str]) -> psi.Request:
+    def create_request(self, inputs: Sequence[str]) -> Any:
         """Creates an encrypted client request for a list of tokens."""
+        require_psi("create_request")
         validated = _validate_token_inputs(inputs)
         self._last_inputs = list(validated)
         return self._client.CreateRequest(validated)
 
     def get_intersection_indices(
         self,
-        setup: psi.ServerSetup,
-        response: psi.Response,
+        setup: Any,
+        response: Any,
     ) -> List[int]:
         """Returns the indices into client inputs that match the server dataset.
 
         NOTE: OpenMined PSI's GetIntersection returns integer indices into the client set,
         NOT string elements!
         """
+        require_psi("get_intersection_indices")
         if not self.reveal_intersection:
             raise PSIProtocolError("Cannot call get_intersection_indices when reveal_intersection is False")
         indices = self._client.GetIntersection(setup, response)
@@ -131,11 +168,12 @@ class PSIClient:
 
     def get_intersection_items(
         self,
-        setup: psi.ServerSetup,
-        response: psi.Response,
+        setup: Any,
+        response: Any,
         inputs: Sequence[str] | None = None,
     ) -> List[str]:
         """Resolves matched indices back to client tokens in client-local memory."""
+        require_psi("get_intersection_items")
         client_inputs = list(inputs) if inputs is not None else self._last_inputs
         if not client_inputs:
             raise PSIProtocolError("No client inputs provided or cached to resolve indices.")
@@ -144,10 +182,11 @@ class PSIClient:
 
     def get_intersection_size(
         self,
-        setup: psi.ServerSetup,
-        response: psi.Response,
+        setup: Any,
+        response: Any,
     ) -> int:
         """Returns only the cardinality (count) of matching items."""
+        require_psi("get_intersection_size")
         return self._client.GetIntersectionSize(setup, response)
 
 
@@ -182,12 +221,19 @@ class PSIBidirectionalSession:
         bank_a_id: str,
         bank_b_id: str,
         fpr: float = 0.001,
-        data_structure: psi.DataStructure | None = None,
+        data_structure: Any = None,
     ):
         self.bank_a_id = bank_a_id
         self.bank_b_id = bank_b_id
         self.fpr = fpr
-        self.data_structure = data_structure or psi.DataStructure.GCS
+        self._data_structure = data_structure
+
+    @property
+    def data_structure(self) -> Any:
+        if self._data_structure is not None:
+            return self._data_structure
+        _psi = require_psi("PSIBidirectionalSession")
+        return _psi.DataStructure.GCS
 
     def execute(
         self,

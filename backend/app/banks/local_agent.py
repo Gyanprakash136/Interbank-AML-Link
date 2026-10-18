@@ -19,17 +19,16 @@ SECURITY & BOUNDARY ARCHITECTURE:
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Set
 import networkx as nx
 import pandas as pd
-import private_set_intersection.python as psi
 
 from app.core.config import DataBoundaryViolationError, settings
 from app.core.security import assert_no_ground_truth_contamination, assert_opaque_tokens
 from app.graph.graph_builder import LocalGraphBuilder
 from app.graph.graph_expansion import LocalInvestigationLead, MatchedSeedGraphExpander
 from app.banks.local_detection import LocalRuleDetectionEngine
-from app.psi.protocol import PSIClient, PSIServer
+from app.psi.protocol import PSIClient, PSIServer, require_psi
 from app.psi.transport import InProcessBankMessageEndpoint
 
 
@@ -176,36 +175,40 @@ class OperationalBankAgent:
         session_id: str,
         client_token_count: int,
         fpr: float = 0.001,
-        data_structure: psi.DataStructure = psi.DataStructure.RAW,
+        data_structure: Any = None,
     ) -> bytes:
         """[SERVER ROLE] Creates setup message from local candidate tokens. Returns wire bytes."""
+        _psi = require_psi("generate_server_setup")
         if not self._candidate_tokens:
             self.prepare_candidate_tokens()
 
         server = PSIServer(reveal_intersection=True)
         self._active_servers[session_id] = server
 
+        ds = data_structure if data_structure is not None else _psi.DataStructure.RAW
         setup_msg = server.create_setup_message(
             inputs=self._candidate_tokens,
             fpr=fpr,
             num_client_inputs=max(1, client_token_count),
-            data_structure=data_structure,
+            data_structure=ds,
         )
         return setup_msg.SerializeToString()
 
     def process_client_request(self, session_id: str, request_bytes: bytes) -> bytes:
         """[SERVER ROLE] Processes encrypted client request. Returns response wire bytes."""
+        _psi = require_psi("process_client_request")
         server = self._active_servers.get(session_id)
         if server is None:
             raise KeyError(f"No active server session for ID '{session_id}' in bank '{self.bank_id}'.")
 
-        req = psi.Request()
+        req = _psi.Request()
         req.ParseFromString(request_bytes)
         resp = server.process_request(req)
         return resp.SerializeToString()
 
     def generate_client_request(self, session_id: str) -> bytes:
         """[CLIENT ROLE] Creates encrypted blinded request from local candidate tokens. Returns wire bytes."""
+        require_psi("generate_client_request")
         if not self._candidate_tokens:
             self.prepare_candidate_tokens()
 
@@ -230,14 +233,15 @@ class OperationalBankAgent:
         - Results are stored in self._local_leads.
         - Returns ONLY the match count (cardinality) to the coordinator.
         """
+        _psi = require_psi("process_server_response")
         client = self._active_clients.get(session_id)
         if client is None:
             raise KeyError(f"No active client session for ID '{session_id}' in bank '{self.bank_id}'.")
 
-        setup_msg = psi.ServerSetup()
+        setup_msg = _psi.ServerSetup()
         setup_msg.ParseFromString(setup_bytes)
 
-        resp_msg = psi.Response()
+        resp_msg = _psi.Response()
         resp_msg.ParseFromString(response_bytes)
 
         # Resolves matching indices back to tokens from local memory

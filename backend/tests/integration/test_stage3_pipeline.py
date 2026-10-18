@@ -20,7 +20,7 @@ from app.banks.data_adapter import BankDataAdapter
 from app.banks.local_detection import LocalRuleDetectionEngine
 from app.graph.graph_builder import LocalGraphBuilder
 from app.graph.graph_expansion import MatchedSeedGraphExpander
-from app.psi.protocol import PSIBidirectionalSession
+from app.psi.protocol import PSI_AVAILABLE, PSIBidirectionalSession
 from scripts.generate_synthetic_data import generate_synthetic_aml_data
 
 
@@ -31,6 +31,10 @@ def pipeline_data_dir(tmp_path_factory):
     return data_dir
 
 
+@pytest.mark.skipif(
+    not PSI_AVAILABLE,
+    reason="OpenMined PSI native dependency is unavailable on this platform",
+)
 def test_stage3_end_to_end_pipeline(pipeline_data_dir):
     """Executes the full Stage 3 pipeline across Bank A and Bank B."""
     # ── 1. Bank A Local Ingestion and Graph Construction ──────────────────────

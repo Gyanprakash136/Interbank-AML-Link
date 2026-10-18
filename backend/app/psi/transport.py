@@ -20,7 +20,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional
 import multiprocessing as mp
 import os
-import private_set_intersection.python as psi
 
 from app.core.config import DataBoundaryViolationError
 
@@ -49,7 +48,7 @@ class BankMessageEndpoint(ABC):
         session_id: str,
         client_token_count: int,
         fpr: float = 0.001,
-        data_structure: psi.DataStructure = psi.DataStructure.RAW,
+        data_structure: Any = None,
     ) -> bytes:
         """Generates the encrypted server setup message. Returns serialized wire bytes."""
         pass
@@ -93,7 +92,7 @@ class InProcessBankMessageEndpoint(BankMessageEndpoint):
         self,
         bank_id: str,
         token_count_fn: Callable[[], int],
-        setup_fn: Callable[[str, int, float, psi.DataStructure], bytes],
+        setup_fn: Callable[[str, int, float, Any], bytes],
         process_req_fn: Callable[[str, bytes], bytes],
         request_fn: Callable[[str], bytes],
         process_resp_fn: Callable[[str, bytes, bytes, int], int],
@@ -117,7 +116,7 @@ class InProcessBankMessageEndpoint(BankMessageEndpoint):
         session_id: str,
         client_token_count: int,
         fpr: float = 0.001,
-        data_structure: psi.DataStructure = psi.DataStructure.RAW,
+        data_structure: Any = None,
     ) -> bytes:
         return self._setup_fn(session_id, client_token_count, fpr, data_structure)
 
@@ -174,9 +173,18 @@ class IPCBankMessageEndpoint(BankMessageEndpoint):
         session_id: str,
         client_token_count: int,
         fpr: float = 0.001,
-        data_structure: psi.DataStructure = psi.DataStructure.RAW,
+        data_structure: Any = None,
     ) -> bytes:
-        ds_raw = (data_structure == psi.DataStructure.RAW)
+        ds_raw = True
+        if data_structure is not None:
+            if isinstance(data_structure, str):
+                ds_raw = (data_structure.upper() == "RAW")
+            elif hasattr(data_structure, "name"):
+                ds_raw = (data_structure.name == "RAW")
+            else:
+                from app.psi.protocol import require_psi
+                _psi = require_psi("generate_server_setup")
+                ds_raw = (data_structure == _psi.DataStructure.RAW)
         self._req_queue.put(("GENERATE_SERVER_SETUP", session_id, client_token_count, fpr, ds_raw))
         tag, data = self._resp_queue.get(timeout=self._timeout)
         if tag == "ERROR":
@@ -239,7 +247,9 @@ def run_ipc_bank_worker(
                 resp_queue.put(("COUNT", cnt))
             elif cmd == "GENERATE_SERVER_SETUP":
                 _, session_id, client_token_count, fpr, ds_raw = msg
-                ds = psi.DataStructure.RAW if ds_raw else psi.DataStructure.GCS
+                from app.psi.protocol import require_psi
+                _psi = require_psi("GENERATE_SERVER_SETUP")
+                ds = _psi.DataStructure.RAW if ds_raw else _psi.DataStructure.GCS
                 setup_bytes = agent.generate_server_setup(session_id, client_token_count, fpr, ds)
                 resp_queue.put(("SETUP_BYTES", setup_bytes))
             elif cmd == "GENERATE_CLIENT_REQUEST":

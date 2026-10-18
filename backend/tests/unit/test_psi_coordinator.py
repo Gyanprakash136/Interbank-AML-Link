@@ -16,7 +16,6 @@ Validates:
 
 import networkx as nx
 import pytest
-import private_set_intersection.python as psi
 
 from app.banks.local_agent import OperationalBankAgent
 from app.core.config import DataBoundaryViolationError
@@ -25,7 +24,18 @@ from app.psi.coordinator import (
     PSICollaborationCoordinator,
 )
 from app.psi.leakage_ledger import PrivacyLeakageLedger
+from app.psi.protocol import PSI_AVAILABLE
 from app.psi.transport import BankMessageEndpoint, InProcessBankMessageEndpoint
+
+if PSI_AVAILABLE:
+    import private_set_intersection.python as psi
+else:
+    psi = None
+
+requires_psi = pytest.mark.skipif(
+    not PSI_AVAILABLE,
+    reason="OpenMined PSI is unavailable on this platform",
+)
 
 
 @pytest.fixture
@@ -90,6 +100,7 @@ def test_coordinator_rejects_complete_bank_agent_instances(test_coordinator):
         )
 
 
+@requires_psi
 def test_coordinator_two_bank_overlap_gcs_and_raw(test_coordinator):
     """Confirms known overlap is detected in both GCS and exact RAW modes with agent data ownership."""
     tokens_a = ["TOK_0000000000000001", "TOK_0000000000000002", "TOK_0000000000000003"]
@@ -138,6 +149,7 @@ def test_coordinator_two_bank_overlap_gcs_and_raw(test_coordinator):
     assert agent_b.get_matched_tokens() == expected_overlap
 
 
+@requires_psi
 def test_coordinator_two_bank_no_overlap(test_coordinator):
     """Confirms disjoint token sets produce zero matches without leaking tokens."""
     tokens_a = ["TOK_0000000000000001", "TOK_0000000000000002"]
@@ -165,6 +177,7 @@ def test_coordinator_two_bank_no_overlap(test_coordinator):
     assert res.session_b_to_a.client_revealed_cardinality == 0
 
 
+@requires_psi
 def test_non_matching_tokens_never_disclosed_to_counterparty(test_coordinator):
     """Verifies that non-matching candidate tokens are never returned or revealed to other participants."""
     exclusive_token_a = "TOK_00000000000000aa"
@@ -192,6 +205,7 @@ def test_non_matching_tokens_never_disclosed_to_counterparty(test_coordinator):
     assert exclusive_token_a not in agent_b.get_matched_tokens()
 
 
+@requires_psi
 def test_coordinator_outputs_contain_no_member_level_tokens(test_coordinator):
     """Verifies that coordinator output structures contain zero member-level tokens or graph objects."""
     tokens_a = ["TOK_0000000000000001", "TOK_0000000000000002"]
@@ -232,6 +246,7 @@ def test_coordinator_outputs_contain_no_member_level_tokens(test_coordinator):
     assert "neighbor_accounts" not in summary_str
 
 
+@requires_psi
 def test_pairwise_cardinality_attributed_to_actual_recipients(test_coordinator):
     """Verifies that pairwise intersection cardinalities are accurately attributed to their actual recipients."""
     tokens_a = ["TOK_0000000000000001", "TOK_0000000000000002"]
@@ -262,6 +277,7 @@ def test_pairwise_cardinality_attributed_to_actual_recipients(test_coordinator):
     assert summary.session_b_to_a.client_revealed_cardinality == 1
 
 
+@requires_psi
 def test_coordinator_three_bank_pairwise_orchestration(test_coordinator):
     """Confirms three-bank collaboration executes 3 pairs (6 directional sessions) and logs to ledger."""
     tokens_a = ["TOK_0000000000000001", "TOK_0000000000000002"]
@@ -309,6 +325,7 @@ def test_coordinator_three_bank_pairwise_orchestration(test_coordinator):
         assert ev.total_wire_bytes > 0
 
 
+@requires_psi
 def test_coordinator_duplicate_round_id_rejected(test_coordinator):
     """Confirms reusing an identical round ID raises ValueError to prevent replay."""
     tokens_a = ["TOK_0000000000000001"]

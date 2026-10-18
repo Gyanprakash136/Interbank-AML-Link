@@ -17,7 +17,7 @@ import pytest
 import pandas as pd
 
 from scripts.generate_synthetic_data import generate_synthetic_aml_data
-from app.psi.protocol import PSIBidirectionalSession
+from app.psi.protocol import PSI_AVAILABLE, PSIBidirectionalSession
 
 
 def _compute_file_sha256(path: Path) -> str:
@@ -110,6 +110,10 @@ def test_linked_vs_non_linked_entities_and_benign_control(tmp_path):
     assert benign_ent["canonical_token"] in meta["bank_a_and_bank_b"]
 
 
+@pytest.mark.skipif(
+    not PSI_AVAILABLE,
+    reason="OpenMined PSI native dependency is unavailable on this platform",
+)
 def test_real_psi_on_generated_bank_datasets(tmp_path):
     """Executes real OpenMined PSI on the generated bank datasets and compares with ground truth."""
     output_dir = tmp_path / "dataset"

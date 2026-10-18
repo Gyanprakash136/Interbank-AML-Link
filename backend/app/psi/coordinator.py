@@ -36,8 +36,6 @@ import time
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 import uuid
 
-import private_set_intersection.python as psi
-
 from app.core.config import DataBoundaryViolationError
 from app.psi.leakage_ledger import (
     CollaborationRoundSummary,
@@ -70,7 +68,7 @@ class PSICollaborationCoordinator:
         self,
         leakage_ledger: Optional[PrivacyLeakageLedger] = None,
         default_fpr: float = 0.001,
-        default_data_structure: psi.DataStructure = psi.DataStructure.RAW,
+        default_data_structure: Any = None,
     ):
         self.ledger = leakage_ledger or PrivacyLeakageLedger()
         self.default_fpr = default_fpr
@@ -84,7 +82,7 @@ class PSICollaborationCoordinator:
         server_endpoint: BankMessageEndpoint,
         client_endpoint: BankMessageEndpoint,
         fpr: Optional[float] = None,
-        data_structure: Optional[psi.DataStructure] = None,
+        data_structure: Any = None,
         expansion_hops: int = 1,
     ) -> LeakageSessionEvent:
         """Executes a single directional PSI session by relaying opaque protobuf messages between endpoints.
@@ -100,8 +98,18 @@ class PSICollaborationCoordinator:
             )
 
         t_start = time.perf_counter()
-        ds = data_structure or self.default_data_structure
-        ds_name = "RAW" if ds == psi.DataStructure.RAW else "GCS"
+        ds = data_structure if data_structure is not None else self.default_data_structure
+        if ds is not None:
+            if isinstance(ds, str):
+                ds_name = ds.upper()
+            elif hasattr(ds, "name"):
+                ds_name = ds.name
+            else:
+                from app.psi.protocol import require_psi
+                _psi = require_psi("execute_directional_session")
+                ds_name = "RAW" if ds == _psi.DataStructure.RAW else "GCS"
+        else:
+            ds_name = "RAW"
         fpr_val = fpr if fpr is not None else self.default_fpr
 
         server_id = server_endpoint.bank_id
@@ -197,7 +205,7 @@ class PSICollaborationCoordinator:
         endpoint_a: BankMessageEndpoint,
         endpoint_b: BankMessageEndpoint,
         fpr: Optional[float] = None,
-        data_structure: Optional[psi.DataStructure] = None,
+        data_structure: Any = None,
         expansion_hops: int = 1,
         **kwargs,
     ) -> PairwiseSessionSummary:
@@ -261,7 +269,7 @@ class PSICollaborationCoordinator:
         endpoints: Any = None,
         round_id: Optional[str] = None,
         fpr: Optional[float] = None,
-        data_structure: Optional[psi.DataStructure] = None,
+        data_structure: Any = None,
         expansion_hops: int = 1,
         **kwargs,
     ) -> CollaborationRoundSummary:

@@ -28,8 +28,10 @@ LIMITATIONS:
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 import networkx as nx
+
+from app.graph.cycles import nodes_on_directed_cycles
 
 
 @dataclass(frozen=True)
@@ -98,7 +100,12 @@ class LocalGraphFeatureExtractor:
         self.base_currency = base_currency.upper()
         self.exchange_rates = exchange_rates
 
-    def extract_for_account(self, G: nx.MultiDiGraph, account_id: str) -> LocalAccountFeatures:
+    def extract_for_account(
+        self,
+        G: nx.MultiDiGraph,
+        account_id: str,
+        cycle_nodes: Optional[Set[str]] = None,
+    ) -> LocalAccountFeatures:
         """Extracts explainable feature metrics for a single node in G."""
         if account_id not in G:
             raise KeyError(f"Account '{account_id}' not found in transaction graph.")
@@ -261,12 +268,10 @@ class LocalGraphFeatureExtractor:
         two_hop_count = len(two_hop_nodes)
 
         # Local Cycle Participation
-        participates_cycle = False
-        try:
-            # Check if account is in a directed cycle
-            participates_cycle = any(account_id in c for c in nx.simple_cycles(G))
-        except Exception:
-            participates_cycle = False
+        # Linear-time SCC membership; pass cycle_nodes to avoid recomputing per account.
+        if cycle_nodes is None:
+            cycle_nodes = nodes_on_directed_cycles(G)
+        participates_cycle = account_id in cycle_nodes
 
         return LocalAccountFeatures(
             account_id=account_id,
@@ -304,7 +309,8 @@ class LocalGraphFeatureExtractor:
     def extract_all_local_accounts(self, G: nx.MultiDiGraph) -> Dict[str, LocalAccountFeatures]:
         """Extracts features for all locally-owned accounts in the graph."""
         results = {}
+        cycle_nodes = nodes_on_directed_cycles(G)  # once per graph
         for node_id, data in G.nodes(data=True):
             if data.get("is_local", False):
-                results[node_id] = self.extract_for_account(G, node_id)
+                results[node_id] = self.extract_for_account(G, node_id, cycle_nodes=cycle_nodes)
         return results

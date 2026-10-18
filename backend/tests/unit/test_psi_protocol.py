@@ -11,6 +11,8 @@ Validates:
 """
 
 import pytest
+
+pytest.importorskip("private_set_intersection.python", reason="OpenMined PSI is unavailable on this platform")
 import private_set_intersection.python as psi
 from app.psi.protocol import (
     PSIClient,

@@ -16,10 +16,12 @@ import pandas as pd
 from app.banks.local_agent import OperationalBankAgent
 from app.core.config import DataBoundaryViolationError, settings
 from app.psi.protocol import (
+    PSI_AVAILABLE,
     PSIClient,
     PSIServer,
     PSIBidirectionalSession,
     PSIBoundaryError,
+    _validate_token_inputs,
 )
 from scripts.generate_synthetic_data import generate_synthetic_aml_data
 
@@ -83,17 +85,27 @@ def test_operational_loader_rejects_leaked_ground_truth_labels(tmp_path):
 
 def test_psi_rejects_raw_transaction_data():
     """Verifies PSI protocol wrapper rejects raw transaction records and DataFrames."""
-    client = PSIClient(reveal_intersection=True)
-
-    # Attempting to pass raw row dictionary
+    # Test validation boundary directly (platform-independent)
     with pytest.raises(PSIBoundaryError):
-        client.create_request([{"account": "ACC_1001", "amount": 9500.0, "type": "WIRE"}])
+        _validate_token_inputs([{"account": "ACC_1001", "amount": 9500.0, "type": "WIRE"}])
 
-    # Attempting to pass stringified row with sensitive keywords
     with pytest.raises(PSIBoundaryError):
-        client.create_request(["account=ACC_A_1001, amount=9800.00, tx=WIRE"])
+        _validate_token_inputs(["account=ACC_A_1001, amount=9800.00, tx=WIRE"])
+
+    # If OpenMined PSI is available, also verify end-to-end through PSIClient
+    if PSI_AVAILABLE:
+        client = PSIClient(reveal_intersection=True)
+        with pytest.raises(PSIBoundaryError):
+            client.create_request([{"account": "ACC_1001", "amount": 9500.0, "type": "WIRE"}])
+
+        with pytest.raises(PSIBoundaryError):
+            client.create_request(["account=ACC_A_1001, amount=9800.00, tx=WIRE"])
 
 
+@pytest.mark.skipif(
+    not PSI_AVAILABLE,
+    reason="OpenMined PSI native dependency is unavailable on this platform",
+)
 def test_bidirectional_session_authorization_isolation():
     """Verifies that in a two-way PSI session, each bank receives ONLY its authorized matches."""
     tokens_a = ["MATCH_ALPHA_BETA", "EXCLUSIVE_A_1", "EXCLUSIVE_A_2"]

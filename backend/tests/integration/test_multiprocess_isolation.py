@@ -22,6 +22,8 @@ import os
 from typing import Dict, List, Tuple
 import pytest
 import networkx as nx
+
+pytest.importorskip("private_set_intersection.python", reason="OpenMined PSI is unavailable on this platform")
 import private_set_intersection.python as psi
 
 from app.banks.local_agent import OperationalBankAgent
